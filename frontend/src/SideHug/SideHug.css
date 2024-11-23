@@ -1,0 +1,33 @@
+.sidehug_container {
+  height: 100vh;
+  display: flex;
+  flex-flow: row;
+}
+.left_sidehug {
+  width: 40vw;
+  height: 100vh;
+  background-color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.right_sidehug {
+  width: 60vw;
+  height: 100vh; /* Full height for the container */
+  overflow-y: auto; /* Allow vertical scrolling */
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Align content to the top */
+}
+
+.twitter_logo {
+  width: 100px;
+  height: 100px;
+}
+
+.sidehug_container {
+  height: 100vh; /* Full height of the viewport */
+  display: flex;
+  flex-flow: row;
+}
