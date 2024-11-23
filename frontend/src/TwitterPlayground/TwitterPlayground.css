@@ -1,0 +1,158 @@
+/* Main Section */
+.twitter-playground {
+  width: 600px;
+  margin: 20px auto;
+  background-color: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 16px;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Input Section */
+.input-section {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 50px;
+}
+
+.profile-picture {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+.tweet-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 18px;
+  line-height: 22px;
+  resize: none;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.toolbar-icon {
+  font-size: 20px;
+  margin-right: 12px;
+  color: #1da1f2;
+  cursor: pointer;
+}
+
+.char-counter {
+  margin-left: auto;
+  font-size: 14px;
+  color: #657786;
+}
+
+.char-counter.warning {
+  color: #e0245e;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 8px;
+  margin: 0 4px;
+  border: none;
+  background-color: #1da1f2;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.action-btn:disabled {
+  background-color: #a1d3f2;
+  cursor: not-allowed;
+}
+
+/* Thread Section */
+.thread-section {
+  margin-top: 16px;
+  border-top: 1px solid #e1e8ed;
+  padding-top: 16px;
+}
+
+.thread-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.thread-profile-picture {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+.thread-content {
+  flex: 1;
+}
+
+.thread-header {
+  font-size: 14px;
+  color: #657786;
+}
+
+.thread-username {
+  font-weight: bold;
+  color: #14171a;
+}
+
+.thread-handle {
+  margin-left: 4px;
+}
+
+.thread-timestamp {
+  margin-left: 4px;
+}
+
+.thread-text {
+  font-size: 16px;
+  color: #14171a;
+  margin-top: 4px;
+}
+
+.thread-actions {
+  display: flex;
+  margin-top: 8px;
+  gap: 16px;
+}
+
+.thread-action-icon {
+  color: #657786;
+  cursor: pointer;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.thread-action-icon:hover {
+  color: #1da1f2;
+}
+
+.tweet-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 18px;
+  line-height: 22px;
+  resize: none; /* Prevent manual resizing */
+  overflow: hidden; /* Hide scrollbars */
+}
