@@ -10,7 +10,7 @@ An intelligent bot for Bluesky that processes mentions and provides AI-powered r
 - **Persona Simulation**: Generates responses mimicking specific writing styles or personalities.
 - **Thread Generation**: Creates engaging thread breakdowns on various topics.
 - **Fact Checking**: Verifies claims with supporting references.
-- **Sentiment Analysis**: Provides emotional context analysis for conversations.
+- **Advanced In-Depth Sentiment Analysis**: Provides in-depth emotional context analysis for conversations.
 - **Meme Generation**: Suggests creative captions and meme formats.
 - **Context Translation**: Simplifies complex discussions into accessible language.
 
@@ -89,9 +89,11 @@ An intelligent bot for Bluesky that processes mentions and provides AI-powered r
 2. **Set up the ML API**
    ```bash
    cd ML
+   cd buildathon
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
+   python manage.py runserver
    ```
 
 ---
@@ -107,9 +109,11 @@ An intelligent bot for Bluesky that processes mentions and provides AI-powered r
 
 2. **ML API Environment Variables**
    ```env
-   DEBUG=True
-   SECRET_KEY=your-secret-key
-   ALLOWED_HOSTS=localhost,127.0.0.1
+   SECRET_KEY= django secret key
+   GOOGLE_API_KEY= your api key
+   OPENAI_API_KEY= your api key
+   IMGFLIP_USERNAME= your imageflip username
+   IMGFLIP_PASSWORD= your imageflip password
    ```
 
 ---
