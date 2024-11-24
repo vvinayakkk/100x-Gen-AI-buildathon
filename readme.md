@@ -100,46 +100,51 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 @mention analyze_context [url]
 ```
 
-Celebrity Impersonation - Working Mechanism
-Core Workflow
+# Celebrity Impersonation Agent
 
-Celebrity Selection
-pythonCopy# System maintains a database of celebrity profiles:
-celebrities = [
-    {
-        "id": 1,
-        "name": "Elon Musk",
-        "background": "Tech visionary...",
-        "tone": "Raw, unfiltered...",
-        "speaking_style": "Blunt technical metaphors...",
-        "emotional_range": [...],
-        "example_tweets": [...]
-    },
-    # More celebrities...
-]
+## Key Components
 
-Request Processing
-pythonCopy@api_view(['POST'])
-def generate_impersonation(request):
-    # Extract data
-    celebrity_id = request.data.get('celebrity_id')
-    tweet = request.data.get('tweet')
+### 1. Celebrity Profiles
+Celebrity profiles form the foundation of the impersonation system. Each profile includes:
 
-    # Find matching celebrity profile
-    celebrity = next((c for c in celebrities if c['id'] == celebrity_id), None)
+- **Personality Traits**: Captures the unique characteristics that define the celebrity’s personality.
+- **Writing Style Patterns**: Models the celebrity’s typical sentence structures, choice of vocabulary, and tone (e.g., formal, casual, humorous).
+- **Example Tweets**: Provides references to how the celebrity interacts on social media, offering insights into their typical communication style.
+- **Emotional Range Indicators**: Highlights the emotional spectrum the celebrity often exhibits, such as optimism, sarcasm, or empathy.
 
-Impersonation Generation
-pythonCopy# Initialize AI agent with specific settings
-agent = CelebrityImpersonationAgent(
-    api_key=settings.GOOGLE_API_KEY,
-    temperature=0.7  # Controls response creativity
-)
+---
 
-# Generate response using celebrity profile
-response = agent.impersonate(tweet, celebrity)
+### 2. Impersonation Agent
+The impersonation agent is the core component that generates responses based on the celebrity’s profile. 
 
-Response Storage
-pythonCopy# Store generated response
+- **Functionality**:
+  - **Uses Celebrity Profile Data**: Leverages traits, writing style, and emotional indicators to stay true to the celebrity's persona.
+  - **Analyzes Input Tweet**: Understands the context, tone, and intention behind the given tweet.
+  - **Generates Contextual Response**: Produces a tweet reply that mirrors the celebrity's tone, maintaining the personality and emotional consistency.
+
+---
+
+### 3. Response Generation Process
+The response generation follows a structured approach:
+
+1. **Input**: Receives a tweet to analyze.
+2. **Processing**: 
+   - Evaluates the input tweet for context, emotional tone, and relevance.
+   - Combines input analysis with data from the celebrity’s profile.
+3. **Output**: 
+   - Generates a tweet response that aligns with the celebrity’s persona.
+   - Ensures the tone, language, and emotional range are consistent with the profile.
+
+---
+
+## Code Workflow
+
+### Response Storage
+
+The generated responses are stored for future reference and analysis:
+
+```python
+# Store generated response
 new_impersonation = {
     "id": len(impersonations) + 1,
     "celebrity_name": celebrity['name'],
@@ -147,66 +152,5 @@ new_impersonation = {
     "response": response
 }
 impersonations.append(new_impersonation)
-
-
-Key Components
-1. Celebrity Profiles
-
-Contains personality traits
-Writing style patterns
-Example tweets for reference
-Emotional range indicators
-
-2. Impersonation Agent
-
-Uses celebrity profile data
-Analyzes input tweet
-Generates contextual response
-Maintains celebrity's tone and style
-
-3. Response Generation
-Input → Processing → Output
-
-```python
-# Example usage
-@mention simulate_style [persona_name]
-```
-
-### Thread Generator
-- Identifies key points
-- Structures coherent threads
-- Optimizes for engagement
-
-```python
-# Example usage
-@mention create_thread [topic] [length]
-```
-
-### Fact Checker
-- Verifies claims
-- Provides sources
-- Highlights inaccuracies
-
-```python
-# Example usage
-@mention fact_check [claim]
-```
-
-## 🧪 Testing
-
-### Server Tests
-```bash
-cd server
-yarn test
-```
-
-### ML API Tests
-```bash
-cd ML
-python manage.py test
-```
-
-
-
 
 
