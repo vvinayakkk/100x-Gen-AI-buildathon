@@ -1,153 +1,15 @@
-// import { BskyAgent } from '@atproto/api';
-// import 'dotenv/config';
-// import fs from 'fs/promises';
-// import path from 'path';
-
-// const agent = new BskyAgent({
-//   service: 'https://bsky.social',
-// });
-
-// const loginToBluesky = async () => {
-//   try {
-//     await agent.login({
-//       identifier: process.env.BLUESKY_HANDLE,
-//       password: process.env.BLUESKY_PASSWORD,
-//     });
-//     console.log('Logged in as:', process.env.BLUESKY_HANDLE);
-//   } catch (error) {
-//     console.error('Login failed:', error);
-//     process.exit(1);
-//   }
-// };
-
-// const savePostImages = async (images) => {
-//   try {
-//     for (const image of images) {
-//       const timestamp = Date.now();
-//       const imageRef = image.image.ref;
-//       const mimeType = image.image.mimeType;
-//       const extension = mimeType.split('/')[1]; // Get 'jpeg' from 'image/jpeg'
-      
-//       const filename = `image_${timestamp}_${imageRef.toString()}.${extension}`;
-//       const filepath = path.join('./images', filename);
-
-//       // Get the image data using the CID
-//       const imageData = await agent.com.atproto.sync.getBlob({
-//         did: agent.session.did,
-//         cid: imageRef.toString()
-//       });
-
-//       // Save the image data to a file
-//       await fs.writeFile(filepath, Buffer.from(await imageData.data.arrayBuffer()));
-//       console.log(`Saved image: ${filename}`);
-//     }
-//   } catch (error) {
-//     console.error('Error saving images:', error);
-//   }
-// };
-
-// const replyToMention = async (mention) => {
-//   try {
-//     const response = await agent.post({
-//       text: 'hi',
-//       reply: {
-//         root: {
-//           uri: mention.uri,
-//           cid: mention.cid,
-//         },
-//         parent: {
-//           uri: mention.uri,
-//           cid: mention.cid,
-//         },
-//       },
-//     });
-    
-//     console.log('Successfully replied to mention');
-//     return response;
-//   } catch (error) {
-//     console.error('Reply error:', error);
-//     return null;
-//   }
-// };
-
-// const checkMentions = async () => {
-//   try {
-//     const response = await agent.app.bsky.notification.listNotifications({ limit: 50 });
-    
-//     if (response.data.notifications.length === 0) {
-//       return;
-//     }
-
-//     const mentions = response.data.notifications.filter(
-//       (notif) => notif.reason === 'mention' && !notif.isRead
-//     );
-
-//     if (mentions.length > 0) {
-//       for (const mention of mentions) {
-//         console.log('New mention found:', mention.record.text);
-        
-//         // Check and save images from the mention
-//         if (mention.record.embed?.$type === 'app.bsky.embed.images') {
-//           await savePostImages(mention.record.embed.images);
-//         }
-        
-//         // Reply with simple text
-//         const reply = await replyToMention(mention);
-        
-//         if (reply) {
-//           await agent.app.bsky.notification.updateSeen({ seenAt: new Date().toISOString() });
-//           console.log('Marked as read');
-//         }
-//       }
-//     }
-//   } catch (error) {
-//     console.error('Check mentions error:', error);
-    
-//     if (error.message?.includes('auth')) {
-//       console.log('Attempting to re-login...');
-//       await loginToBluesky();
-//     }
-//   }
-// };
-
-// const ensureImagesFolder = async () => {
-//   try {
-//     await fs.access('./images');
-//   } catch {
-//     console.log('Creating images folder...');
-//     await fs.mkdir('./images');
-//   }
-// };
-
-// const runBot = async () => {
-//   await ensureImagesFolder();
-//   await loginToBluesky();
-//   console.log('Bot started! Checking mentions every 5 seconds...');
-
-//   await checkMentions();
-//   setInterval(checkMentions, 5000);
-// };
-
-// process.on('unhandledRejection', (error) => {
-//   console.error('Unhandled rejection:', error);
-// });
-
-// runBot().catch((error) => {
-//   console.error('Bot crashed:', error);
-//   process.exit(1);
-// });
-
 import { AtpAgent } from '@atproto/api';
 import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
-import sharp from 'sharp'; // For image processing and metadata stripping
+import sharp from 'sharp';
+import axios from 'axios';
 
 const agent = new AtpAgent({
   service: 'https://bsky.social',
 });
 
-const MAX_IMAGE_SIZE = 10000000; // 1MB size limit
+const MAX_IMAGE_SIZE = 10000000;
 
 const loginToBluesky = async () => {
   try {
@@ -162,103 +24,16 @@ const loginToBluesky = async () => {
   }
 };
 
-const processAndSaveImage = async (imageData, filename) => {
-  try {
-    // Process image with sharp to strip metadata and optimize
-    const processedImage = await sharp(imageData)
-      .withMetadata(false) // Strip EXIF metadata
-      .jpeg({ quality: 80 }) // Convert to JPEG with reasonable quality
-      .toBuffer();
+// ... (keeping all the image processing functions the same)
 
-    // Check file size
-    if (processedImage.length > MAX_IMAGE_SIZE) {
-      console.error(`Image too large (${processedImage.length} bytes), skipping: ${filename}`);
-      return null;
-    }
-
-    // Save processed image
-    const filepath = path.join('./images', filename);
-    await fs.writeFile(filepath, processedImage);
-    
-    return {
-      filepath,
-      data: processedImage,
-      size: processedImage.length
-    };
-  } catch (error) {
-    console.error('Error processing image:', error);
-    return null;
-  }
-};
-
-const uploadBlob = async (imageBuffer, mimeType) => {
-  try {
-    const response = await agent.uploadBlob(imageBuffer, {
-      encoding: mimeType,
-    });
-
-    return response.data.blob;
-  } catch (error) {
-    console.error('Error uploading blob:', error);
-    return null;
-  }
-};
-
-const savePostImages = async (embed) => {
-  try {
-    if (!embed || embed.$type !== 'app.bsky.embed.images' || !embed.images) {
-      return;
-    }
-
-    for (const image of embed.images) {
-        
-      try {
-        // Get the image data using the blob reference
-        const imageData = await agent.com.atproto.sync.getBlob({
-          did: agent.session.did,
-          cid: image.image.ref.$link || image.image.ref.toString()
-        });
-
-        if (!imageData.data) {
-          console.error('No image data received');
-          continue;
-        }
-
-        // Create filename using CID and timestamp
-        const timestamp = Date.now();
-        const cid = image.image.ref.$link || image.image.ref.toString();
-        const extension = image.image.mimeType.split('/')[1];
-        const filename = `image_${timestamp}_${cid}.${extension}`;
-
-        // Process and save the image
-        const processedImage = await processAndSaveImage(
-          Buffer.from(await imageData.data.arrayBuffer()),
-          filename
-        );
-
-        if (processedImage) {
-          console.log(`Saved image: ${filename}`);
-          console.log(`Original alt text: ${image.alt || 'No alt text provided'}`);
-        }
-
-      } catch (error) {
-        console.error('Error processing individual image:', error);
-        continue;
-      }
-    }
-  } catch (error) {
-    console.error('Error in savePostImages:', error);
-  }
-};
-
-const replyToMention = async (mention) => {
+const replyToMention = async (mention, rootPost, replyText) => {
   try {
     const response = await agent.post({
-      text: 'hi',
+      text: replyText,
       reply: {
         root: {
-          uri: mention.uri,
-          cid: mention.cid,
+          uri: rootPost?.uri || mention.uri,
+          cid: rootPost?.cid || mention.cid,
         },
         parent: {
           uri: mention.uri,
@@ -275,11 +50,184 @@ const replyToMention = async (mention) => {
   }
 };
 
+
+const splitContentIntoChunks = (content, maxLength = 299) => {
+  const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
+  const chunks = [];
+  let currentChunk = '';
+
+  for (const sentence of sentences) {
+    // Check if adding this sentence would exceed maxLength
+    if ((currentChunk + sentence).length <= maxLength) {
+      currentChunk += sentence;
+    } else {
+      // If current chunk is not empty, push it to chunks
+      if (currentChunk) {
+        chunks.push(currentChunk.trim());
+      }
+      // Start new chunk with current sentence if it fits
+      currentChunk = sentence.length <= maxLength ? sentence : sentence.substring(0, maxLength);
+    }
+  }
+
+  // Push the last chunk if not empty
+  if (currentChunk) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks.reverse();
+};
+
+const processAndUploadImage = async (imageUrl) => {
+  try {
+    // Download the image
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(response.data);
+    
+    // Process image with sharp
+    const processedImage = await sharp(buffer)
+      .resize(1000, 1000, { 
+        fit: 'inside',
+        withoutEnlargement: true 
+      })
+      .toBuffer();
+      
+    // Check if image size is within limits
+    if (processedImage.length > MAX_IMAGE_SIZE) {
+      throw new Error('Processed image exceeds maximum size limit');
+    }
+    
+    // Upload to Bluesky
+    const uploadResponse = await agent.uploadBlob(processedImage, {
+      encoding: 'image/jpeg'
+    });
+    
+    return {
+      $type: 'app.bsky.embed.images',
+      images: [{
+        alt: 'Default response image',
+        image: uploadResponse.data.blob
+      }]
+    };
+  } catch (error) {
+    console.error('Error processing image:', error);
+    return null;
+  }
+};
+
+const processMention = async (mention, rootPost) => {
+  try {
+    const user_text = mention.record.text;
+    const root_text = rootPost ? rootPost.text : '';
+    
+    const data = {
+      userCommand: user_text,
+      originalTweet: root_text
+    };
+    
+    const config = {
+      method: 'post',
+      url: `${process.env.API_MIDDLEWARE}/process-mention`,
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      data: data
+    };
+    
+    const response = await axios(config);
+    
+    if (response.data.category === "Impersonation Agent") {
+      const ai_response = String(response.data.result.response);
+      var res_arr = splitContentIntoChunks(ai_response);
+      console.log('AI Response:', res_arr);
+      for(const res of res_arr){
+        await replyToMention(mention, rootPost,res);
+      }
+    }
+    else if (response.data.category === "Viral Thread Generator" ){
+      console.log(response.data.result);
+      var ai_texts = response.data.result.slice(0,5).reverse();
+      console.log('AI Response:', ai_texts);
+      for(const ai_text of ai_texts){
+        await replyToMention(mention, rootPost, String(ai_text.content).substring(0,299));
+      }
+    }
+    else if (response.data.category === "Fact-Checker Agent" ){
+      var ai_response = response.data.result.analyses.wikipedia.articles;
+      var res_arr = splitContentIntoChunks(ai_response[0].content);
+      console.log('AI Response:', res_arr);
+      for(const res of res_arr){
+        await replyToMention(mention, rootPost,res);
+      }
+      // return await replyToMention(mention, rootPost, String(ai_response[0].content).substring(0,299));
+    }
+    else if (response.data.category === "Sentiment Analyzer" ){
+      var ai_response = response.data.result.analysis.emotion_profile.dominant_emotion;
+      console.log('AI Response:', ai_response);
+      return await replyToMention(mention, rootPost, `By my analysis this tweet is : ${ai_response}`);
+    }
+    else if (response.data.category === "Context Bridge" ){
+      var ai_texts = response.data;
+      for( ai_text of ai_texts){
+        await replyToMention(mention, rootPost, ai_text.content);
+      }
+    }
+    else if(response.data.category === "Meme Creator"){
+      var url = response.data.result.url;
+      const imageEmbed = await processAndUploadImage(url);
+      if (imageEmbed) {    
+          const response = await agent.post({
+            text: "Here's a response for you!",
+            embed: imageEmbed,
+            reply: {
+              root: {
+                uri: rootPost?.uri || mention.uri,
+                cid: rootPost?.cid || mention.cid,
+              },
+              parent: {
+                uri: mention.uri,
+                cid: mention.cid,
+              },
+            },
+          });
+          console.log('Successfully posted image response');
+    }
+  }
+    return true;
+  } catch (error) {
+    console.error('Error processing mention:', error);
+    return null;
+  }
+};
+
+const getRootPost = async (uri) => {
+  try {
+    const response = await agent.api.app.bsky.feed.getPostThread({
+      uri: uri,
+      depth: 0,
+    });
+    
+    if (response.data.thread?.post) {
+      const post = response.data.thread.post;
+      return {
+        text: post.record.text,
+        uri: post.uri,
+        cid: post.cid,
+        embed: post.record.embed
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting root post:', error);
+    return null;
+  }
+};
+
 const checkMentions = async () => {
   try {
     const response = await agent.app.bsky.notification.listNotifications({ limit: 50 });
     
-    if (response.data.notifications.length === 0) {
+    if (!response.data.notifications.length) {
       return;
     }
 
@@ -288,18 +236,23 @@ const checkMentions = async () => {
     );
 
     if (mentions.length > 0) {
+      console.log(`Processing ${mentions.length} new mentions...`);
+      
       for (const mention of mentions) {
-        console.log('New mention found:', mention.record.text);
+        console.log('Processing mention:', mention.record.text);
         
-        if (mention.record.embed) {
-          await savePostImages(mention.record.embed);
-        }
+        // Get the root post
+        const rootPost = await getRootPost(mention.record.reply?.parent?.uri);
         
-        const reply = await replyToMention(mention);
+        // Process the mention and get response
+        const reply = await processMention(mention, rootPost);
         
         if (reply) {
-          await agent.app.bsky.notification.updateSeen({ seenAt: new Date().toISOString() });
-          console.log('Marked as read');
+          // Mark this specific notification as read
+          await agent.app.bsky.notification.updateSeen({
+            seenAt: new Date().toISOString()
+          });
+          console.log('Marked notification as read');
         }
       }
     }
@@ -325,10 +278,13 @@ const ensureImagesFolder = async () => {
 const runBot = async () => {
   await ensureImagesFolder();
   await loginToBluesky();
-  console.log('Bot started! Checking mentions every 5 seconds...');
+  console.log('Bot started! Checking mentions every 30 seconds...');
 
+  // Initial check
   await checkMentions();
-  setInterval(checkMentions, 5000);
+  
+  // Set up interval with longer delay to avoid rate limits
+  setInterval(checkMentions, 30000);
 };
 
 process.on('unhandledRejection', (error) => {
