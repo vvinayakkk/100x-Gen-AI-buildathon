@@ -183,7 +183,7 @@ async def analyze_with_gemini(self, text):
 ### 4. API Usage
 
 ```http
-POST /analyze_tweet/
+"/api/analyze/"
 Content-Type: multipart/form-data
 
 file: tweet_screenshot.jpg
