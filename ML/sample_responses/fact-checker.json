@@ -1,0 +1,47 @@
+{
+    "claim": "Water boils at 100 degrees Celsius at sea level.",
+    "timestamp": "2024-11-24T17:39:28.644115",
+    "analyses": {
+        "wikipedia": {
+            "found_articles": 3,
+            "articles": [
+                {
+                    "title": "Celsius",
+                    "content": "The degree Celsius is the unit of temperature on the Celsius temperature scale (originally known as the centigrade scale outside Sweden), one of two temperature scales used in the International System of Units (SI), the other being the closely related Kelvin scale. The degree Celsius (symbol: °C) can refer to a specific point on the Celsius temperature scale or to a difference or range between two temperatures. It is named after the Swedish astronomer Anders Celsius (1701–1744), who proposed the first version of it in 1742. The unit was called centigrade in several languages (from the Latin centum, which means 100, and gradus, which means steps) for many years. In 1948, the International Committee for Weights and Measures renamed it to honor Celsius and also to remove confusion with the term for one hundredth of a gradian in some languages. Most countries use this scale (the Fahrenheit scale is still used in the United States, some island territories, and Liberia).\nThroughout the 19th century, the scale was based on 0 °C for the freezing point of water and 100 °C for the boiling point of water at 1 atm pressure. (In Celsius's initial proposal, the values were reversed: the boiling point was 0 degrees and the freezing point was 100 degrees.)\n\nBetween 1954 and 2019, the precise definitions of the unit degree Celsius and the Celsius temperature scale used absolute zero and the triple point of water. Since 2007, the Celsius temperature scale has been defined in terms of the kelvin, the SI base unit of thermodynamic temperature (symbol: K). Absolute zero, the lowest temperature, is now defined as being exactly 0 K and −273.15 °C.\n\n",
+                    "url": "https://en.wikipedia.org/wiki/Celsius"
+                },
+                {
+                    "title": "Fahrenheit",
+                    "content": "The Fahrenheit scale () is a temperature scale based on one proposed in 1724 by the European physicist Daniel Gabriel Fahrenheit (1686–1736). It uses the degree Fahrenheit (symbol: °F) as the unit. Several accounts of how he originally defined his scale exist, but the original paper suggests the lower defining point, 0 °F, was established as the freezing temperature of a solution of brine made from a mixture of water, ice, and ammonium chloride (a salt). The other limit established was his best estimate of the average human body temperature, originally set at 90 °F, then 96 °F (about 2.6 °F less than the modern value due to a later redefinition of the scale).\nFor much of the 20th century, the Fahrenheit scale was defined by two fixed points with a 180 °F separation: the temperature at which pure water freezes was defined as 32 °F and the boiling point of water was defined to be 212 °F, both at sea level and under standard atmospheric pressure. It is now formally defined using the Kelvin scale.\nIt continues to be used in the United States (including its unincorporated territories), its freely associated states in the Western Pacific (Palau, the Federated States of Micronesia and the Marshall Islands), the Cayman Islands, and Liberia.\nFahrenheit is commonly still used alongside the Celsius scale in other countries that use the U.S. metrological service, such as Antigua and Barbuda, Saint Kitts and Nevis, the Bahamas, and Belize. A handful of British Overseas Territories, including the Virgin Islands, Montserrat, Anguilla, and Bermuda, also still use both scales. All other countries now use Celsius (\"centigrade\" until 1948), which was invented 18 years after the Fahrenheit scale.\n\n",
+                    "url": "https://en.wikipedia.org/wiki/Fahrenheit"
+                },
+                {
+                    "title": "Anders Celsius",
+                    "content": "Anders Celsius (Swedish pronunciation: [ˈânːdɛʂ ˈsɛ̌lːsɪɵs]; 27 November 1701 – 25 April 1744) was a Swedish astronomer, physicist and mathematician. He was professor of astronomy at Uppsala University from 1730 to 1744, but traveled from 1732 to 1735 visiting notable observatories in Germany, Italy and France. He founded the Uppsala Astronomical Observatory in 1741, and in 1742 proposed (an inverted form of) the Centigrade temperature scale which was later renamed Celsius in his honour.",
+                    "url": "https://en.wikipedia.org/wiki/Anders_Celsius"
+                }
+            ]
+        },
+        "probability": {
+            "labels": [
+                "fact",
+                "opinion",
+                "misinformation"
+            ],
+            "scores": [
+                0.6916321516036987,
+                0.22397281229496002,
+                0.08439497649669647
+            ]
+        },
+        "temporal": {
+            "dates_found": [],
+            "has_future_dates": false,
+            "temporal_inconsistencies": []
+        },
+        "gemini": null,
+        "langchain": "**1. Verification status:** True\n\n**2. Supporting evidence:**\n\n* The boiling point of water at sea level is defined as 100 degrees Celsius (212 degrees Fahrenheit) by the International System of Units (SI).\n* This definition is based on the fact that water boils when its vapor pressure equals the atmospheric pressure.\n* At sea level, the atmospheric pressure is approximately 101.325 kilopascals (kPa), which is equal to the vapor pressure of water at 100 degrees Celsius.\n\n**3. Confidence score:** 100\n\n**4. Sources:**\n\n* [International Bureau of Weights and Measures (BIPM)](https://www.bipm.org/en/measurement-units/)\n* [National Institute of Standards and Technology (NIST)](https://www.nist.gov/topics/temperature/boiling-point-water)\n* [Royal Society of Chemistry](https://www.rsc.org/periodic-table/element/1/hydrogen)"
+    },
+    "credibility_score": 1.0,
+    "verdict": "Highly Likely True"
+}

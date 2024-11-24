@@ -1,0 +1,307 @@
+{
+    "analysis": {
+        "text": "Just witnessed an incredible AI breakthrough that could revolutionize machine learning! 🚀 #AIInnovation",
+        "emotion_profile": {
+            "detailed_emotions": {
+                "anger": 0.0,
+                "disgust": 0.0,
+                "fear": 0.46451470255851746,
+                "joy": 0.0,
+                "neutral": 0.0,
+                "sadness": 0.0,
+                "surprise": 0.0
+            },
+            "dominant_emotion": "fear"
+        },
+        "sentiment_layers": {
+            "rating": "5 stars",
+            "confidence": 0.8040805459022522
+        },
+        "linguistic_complexity": {
+            "token_diversity": 1.0,
+            "syntactic_complexity": 0.4666666666666667,
+            "avg_word_length": 6.066666666666666
+        },
+        "named_entities": [
+            {
+                "text": "AI",
+                "type": "ORG",
+                "start": 29,
+                "end": 31
+            }
+        ],
+        "toxicity_assessment": {
+            "toxicity_label": "toxicity",
+            "toxicity_score": 0.000392535439459607
+        },
+        "basic_analysis": {
+            "text": "Just witnessed an incredible AI breakthrough that could revolutionize machine learning! 🚀 #AIInnovation",
+            "linguistic_analysis": {
+                "syntax_tree": [
+                    {
+                        "token": "Just",
+                        "pos": "ADV",
+                        "dependency": "advmod",
+                        "head": "witnessed"
+                    },
+                    {
+                        "token": "witnessed",
+                        "pos": "VERB",
+                        "dependency": "ROOT",
+                        "head": "witnessed"
+                    },
+                    {
+                        "token": "an",
+                        "pos": "DET",
+                        "dependency": "det",
+                        "head": "breakthrough"
+                    },
+                    {
+                        "token": "incredible",
+                        "pos": "ADJ",
+                        "dependency": "amod",
+                        "head": "breakthrough"
+                    },
+                    {
+                        "token": "AI",
+                        "pos": "PROPN",
+                        "dependency": "compound",
+                        "head": "breakthrough"
+                    },
+                    {
+                        "token": "breakthrough",
+                        "pos": "NOUN",
+                        "dependency": "dobj",
+                        "head": "witnessed"
+                    },
+                    {
+                        "token": "that",
+                        "pos": "PRON",
+                        "dependency": "nsubj",
+                        "head": "revolutionize"
+                    },
+                    {
+                        "token": "could",
+                        "pos": "AUX",
+                        "dependency": "aux",
+                        "head": "revolutionize"
+                    },
+                    {
+                        "token": "revolutionize",
+                        "pos": "VERB",
+                        "dependency": "relcl",
+                        "head": "breakthrough"
+                    },
+                    {
+                        "token": "machine",
+                        "pos": "NOUN",
+                        "dependency": "compound",
+                        "head": "learning"
+                    },
+                    {
+                        "token": "learning",
+                        "pos": "NOUN",
+                        "dependency": "dobj",
+                        "head": "revolutionize"
+                    },
+                    {
+                        "token": "!",
+                        "pos": "PUNCT",
+                        "dependency": "punct",
+                        "head": "witnessed"
+                    },
+                    {
+                        "token": "🚀",
+                        "pos": "PUNCT",
+                        "dependency": "ROOT",
+                        "head": "🚀"
+                    },
+                    {
+                        "token": "#",
+                        "pos": "SYM",
+                        "dependency": "punct",
+                        "head": "AIInnovation"
+                    },
+                    {
+                        "token": "AIInnovation",
+                        "pos": "NOUN",
+                        "dependency": "ROOT",
+                        "head": "AIInnovation"
+                    }
+                ],
+                "dependency_graph": {
+                    "Just": {
+                        "children": [],
+                        "ancestors": [
+                            "witnessed"
+                        ]
+                    },
+                    "witnessed": {
+                        "children": [
+                            "Just",
+                            "breakthrough",
+                            "!"
+                        ],
+                        "ancestors": []
+                    },
+                    "an": {
+                        "children": [],
+                        "ancestors": [
+                            "breakthrough",
+                            "witnessed"
+                        ]
+                    },
+                    "incredible": {
+                        "children": [],
+                        "ancestors": [
+                            "breakthrough",
+                            "witnessed"
+                        ]
+                    },
+                    "AI": {
+                        "children": [],
+                        "ancestors": [
+                            "breakthrough",
+                            "witnessed"
+                        ]
+                    },
+                    "breakthrough": {
+                        "children": [
+                            "an",
+                            "incredible",
+                            "AI",
+                            "revolutionize"
+                        ],
+                        "ancestors": [
+                            "witnessed"
+                        ]
+                    },
+                    "that": {
+                        "children": [],
+                        "ancestors": [
+                            "revolutionize",
+                            "breakthrough",
+                            "witnessed"
+                        ]
+                    },
+                    "could": {
+                        "children": [],
+                        "ancestors": [
+                            "revolutionize",
+                            "breakthrough",
+                            "witnessed"
+                        ]
+                    },
+                    "revolutionize": {
+                        "children": [
+                            "that",
+                            "could",
+                            "learning"
+                        ],
+                        "ancestors": [
+                            "breakthrough",
+                            "witnessed"
+                        ]
+                    },
+                    "machine": {
+                        "children": [],
+                        "ancestors": [
+                            "learning",
+                            "revolutionize",
+                            "breakthrough",
+                            "witnessed"
+                        ]
+                    },
+                    "learning": {
+                        "children": [
+                            "machine"
+                        ],
+                        "ancestors": [
+                            "revolutionize",
+                            "breakthrough",
+                            "witnessed"
+                        ]
+                    },
+                    "!": {
+                        "children": [],
+                        "ancestors": [
+                            "witnessed"
+                        ]
+                    },
+                    "🚀": {
+                        "children": [],
+                        "ancestors": []
+                    },
+                    "#": {
+                        "children": [],
+                        "ancestors": [
+                            "AIInnovation"
+                        ]
+                    },
+                    "AIInnovation": {
+                        "children": [
+                            "#"
+                        ],
+                        "ancestors": []
+                    }
+                },
+                "complexity_metrics": {
+                    "token_diversity": 1.0,
+                    "syntactic_complexity": 0.4666666666666667,
+                    "avg_word_length": 6.066666666666666
+                }
+            },
+            "semantic_analysis": {
+                "semantic_network": {
+                    "nodes": [
+                        "Just",
+                        "witnessed",
+                        "an",
+                        "incredible",
+                        "AI",
+                        "breakthrough",
+                        "that",
+                        "could",
+                        "revolutionize",
+                        "machine",
+                        "learning",
+                        "!",
+                        "🚀",
+                        "#",
+                        "AIInnovation"
+                    ],
+                    "edges": [
+                        [
+                            "Just",
+                            "incredible"
+                        ],
+                        [
+                            "Just",
+                            "that"
+                        ],
+                        [
+                            "Just",
+                            "could"
+                        ],
+                        [
+                            "an",
+                            "that"
+                        ],
+                        [
+                            "that",
+                            "could"
+                        ]
+                    ]
+                },
+                "entities": [
+                    {
+                        "text": "AI",
+                        "type": "ORG",
+                        "start": 29,
+                        "end": 31
+                    }
+                ]
+            }
+        }
+    }
+}

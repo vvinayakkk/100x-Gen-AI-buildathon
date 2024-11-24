@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Dict
+from typing import Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
@@ -36,7 +36,6 @@ class CelebrityImpersonationAgent:
         - Capture raw emotional truth
         - NO formal language
         """
-        
         prompt = PromptTemplate(
             input_variables=["tweet"],
             template=prompt_template

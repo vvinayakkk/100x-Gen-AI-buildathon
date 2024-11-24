@@ -1,0 +1,219 @@
+[
+    {
+        "position": 1,
+        "content": "POV: You're a boomer saying the moon landing was fake. NOT THE conspiracy theories we were promised. It's giving \"OK, Karen\" vibes. #LunarLunacy #BuzzOffBuzz",
+        "metrics": {
+            "basic_metrics": {
+                "sentiment": "NEGATIVE",
+                "confidence": 0.9879863858222961,
+                "subjectivity": 0.75,
+                "polarity": 0.0,
+                "emoji_count": 0,
+                "character_count": 157,
+                "word_count": 24
+            },
+            "style_metrics": {
+                "sass_level": 0.0,
+                "meme_density": 0.0,
+                "engagement_potential": 0.0,
+                "dark_humor_score": 0.0,
+                "slang_usage": 0.0,
+                "argument_strength": 0.0,
+                "viral_format_count": 1,
+                "contemporary_score": 0.0,
+                "perspective_balance": 0.0,
+                "clout_factor": 0.0,
+                "twitter_native_score": 6.666666666666667,
+                "ratio_potential": 0.0,
+                "style_tags": []
+            },
+            "optimal_posting_time": "afternoon"
+        }
+    },
+    {
+        "position": 2,
+        "content": "Let's flip the script real quick... 🔄",
+        "metrics": {
+            "basic_metrics": {
+                "sentiment": "NEGATIVE",
+                "confidence": 0.6620112657546997,
+                "subjectivity": 0.75,
+                "polarity": 0.5,
+                "emoji_count": 1,
+                "character_count": 37,
+                "word_count": 7
+            },
+            "style_metrics": {
+                "sass_level": 0.0,
+                "meme_density": 0.0,
+                "engagement_potential": 0.0,
+                "dark_humor_score": 28.57142857142857,
+                "slang_usage": 0.0,
+                "argument_strength": 0.0,
+                "viral_format_count": 0,
+                "contemporary_score": 0.0,
+                "perspective_balance": 0.0,
+                "clout_factor": 0.0,
+                "twitter_native_score": 0.0,
+                "ratio_potential": 9.523809523809524,
+                "style_tags": []
+            },
+            "optimal_posting_time": "afternoon"
+        }
+    },
+    {
+        "position": 3,
+        "content": "Karen, it's 2023, not the 1960s! 👩‍🚀 Our satellites are like \"Yo, we've been there, and it's legit!\" 🛰️ Stop with the moon landing flop talk. It's time to #EmbraceReality and #ScienceWins 🏆",
+        "metrics": {
+            "basic_metrics": {
+                "sentiment": "NEGATIVE",
+                "confidence": 0.997761607170105,
+                "subjectivity": 0.0,
+                "polarity": 0.0,
+                "emoji_count": 4,
+                "character_count": 189,
+                "word_count": 33
+            },
+            "style_metrics": {
+                "sass_level": 0.0,
+                "meme_density": 0.0,
+                "engagement_potential": 0.0,
+                "dark_humor_score": 0.0,
+                "slang_usage": 0.0,
+                "argument_strength": 0.0,
+                "viral_format_count": 0,
+                "contemporary_score": 6.0606060606060606,
+                "perspective_balance": 0.0,
+                "clout_factor": 0.0,
+                "twitter_native_score": 2.0202020202020203,
+                "ratio_potential": 0.0,
+                "style_tags": []
+            },
+            "optimal_posting_time": "afternoon"
+        }
+    },
+    {
+        "position": 4,
+        "content": "Prepare for a reality check... ⚡️",
+        "metrics": {
+            "basic_metrics": {
+                "sentiment": "NEGATIVE",
+                "confidence": 0.9736368656158447,
+                "subjectivity": 0.0,
+                "polarity": 0.0,
+                "emoji_count": 1,
+                "character_count": 33,
+                "word_count": 6
+            },
+            "style_metrics": {
+                "sass_level": 0.0,
+                "meme_density": 0.0,
+                "engagement_potential": 0.0,
+                "dark_humor_score": 0.0,
+                "slang_usage": 0.0,
+                "argument_strength": 0.0,
+                "viral_format_count": 0,
+                "contemporary_score": 0.0,
+                "perspective_balance": 0.0,
+                "clout_factor": 0.0,
+                "twitter_native_score": 0.0,
+                "ratio_potential": 0.0,
+                "style_tags": []
+            },
+            "optimal_posting_time": "afternoon"
+        }
+    },
+    {
+        "position": 5,
+        "content": "1. Bestie, the moon landing was as real as your \"Karen\" haircut. Stop trying to slay with your conspiracy theories. #LunarLunacy #BuzzOffBuzz",
+        "metrics": {
+            "basic_metrics": {
+                "sentiment": "NEGATIVE",
+                "confidence": 0.9921768307685852,
+                "subjectivity": 0.30000000000000004,
+                "polarity": 0.2,
+                "emoji_count": 0,
+                "character_count": 141,
+                "word_count": 22
+            },
+            "style_metrics": {
+                "sass_level": 18.181818181818183,
+                "meme_density": 0.0,
+                "engagement_potential": 0.0,
+                "dark_humor_score": 0.0,
+                "slang_usage": 0.0,
+                "argument_strength": 0.0,
+                "viral_format_count": 0,
+                "contemporary_score": 9.090909090909092,
+                "perspective_balance": 0.0,
+                "clout_factor": 6.060606060606061,
+                "twitter_native_score": 3.0303030303030307,
+                "ratio_potential": 6.060606060606061,
+                "style_tags": []
+            },
+            "optimal_posting_time": "afternoon"
+        }
+    },
+    {
+        "position": 6,
+        "content": "\"Yo, Moon landing truthers, it's not rocket science to see y'all reaching for the stars with your fake news. 🥱 We ain't got time for your lunar lunacy. #MoonLandingWasReal #ScienceWins\"",
+        "metrics": {
+            "basic_metrics": {
+                "sentiment": "NEGATIVE",
+                "confidence": 0.9986773133277893,
+                "subjectivity": 1.0,
+                "polarity": -0.5,
+                "emoji_count": 0,
+                "character_count": 185,
+                "word_count": 30
+            },
+            "style_metrics": {
+                "sass_level": 0.0,
+                "meme_density": 0.0,
+                "engagement_potential": 0.0,
+                "dark_humor_score": 0.0,
+                "slang_usage": 0.0,
+                "argument_strength": 0.0,
+                "viral_format_count": 1,
+                "contemporary_score": 0.0,
+                "perspective_balance": 0.0,
+                "clout_factor": 0.0,
+                "twitter_native_score": 6.666666666666667,
+                "ratio_potential": 0.0,
+                "style_tags": []
+            },
+            "optimal_posting_time": "afternoon"
+        }
+    },
+    {
+        "position": 8,
+        "content": "🌖 Moon landing: real or nah? 🛸 Sippin' on #LunarTruth while the haters stay salty. 🧂 #MoonHoax is the ultimate mic drop. 🎤 Join the debate, fam! #SpaceTruthersUnite #SusMoon #AmongUsInSpace",
+        "metrics": {
+            "basic_metrics": {
+                "sentiment": "NEGATIVE",
+                "confidence": 0.9863430261611938,
+                "subjectivity": 0.65,
+                "polarity": 0.1,
+                "emoji_count": 3,
+                "character_count": 189,
+                "word_count": 30
+            },
+            "style_metrics": {
+                "sass_level": 0.0,
+                "meme_density": 0.0,
+                "engagement_potential": 0.0,
+                "dark_humor_score": 0.0,
+                "slang_usage": 6.666666666666667,
+                "argument_strength": 0.0,
+                "viral_format_count": 0,
+                "contemporary_score": 6.666666666666667,
+                "perspective_balance": 0.0,
+                "clout_factor": 0.0,
+                "twitter_native_score": 4.444444444444445,
+                "ratio_potential": 0.0,
+                "style_tags": []
+            },
+            "optimal_posting_time": "afternoon"
+        }
+    }
+]

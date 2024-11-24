@@ -20,11 +20,11 @@ from django.urls import path,include
 urlpatterns = [
     path('admin/', admin.site.urls),
     # path('api/',include('context_bridge.urls')),
-    # path('api/',include('fact_checker.urls')),
-    # path('api/',include('impersonation.urls')),
-    # path('api/',include('meme_creator.urls')),
+    path('api/',include('fact_checker.urls')),
+    path('api/',include('impersonation.urls')),
+    path('api/',include('meme_creator.urls')),
     # path('api/',include('picture_perfect.urls')),
-    #path('api/',include('screenshot_research.urls')),
-    path('api/',include('sentiment_analyzer.urls'))
-    #path('api/',include('viral_thread.urls'))
+    path('api/',include('screenshot_research.urls')),
+    path('api/',include('sentiment_analyzer.urls')),
+    path('api/',include('viral_thread.urls'))
 ]

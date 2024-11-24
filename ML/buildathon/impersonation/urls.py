@@ -1,12 +1,8 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from . import views
 
-router = DefaultRouter()
-router.register(r'celebrities', views.CelebrityViewSet)
-router.register(r'impersonations', views.ImpersonationViewSet)
-
 urlpatterns = [
-    path('', include(router.urls)),
+    path('celebrities/', views.list_celebrities, name='list-celebrities'),
+    path('impersonations/', views.list_impersonations, name='list-impersonations'),
     path('generate/', views.generate_impersonation, name='generate-impersonation'),
 ]
