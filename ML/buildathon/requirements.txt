@@ -116,3 +116,4 @@ python-decouple
 wikipedia
 langchain_google_genai
 nltk
+textblob
