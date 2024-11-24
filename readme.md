@@ -436,3 +436,170 @@ The fact checker combines several sophisticated approaches:
 - Transformers for zero-shot classification
 - Wikipedia-API for reference data
 - LangChain for structured prompting
+
+# Viral Thread Generator Documentation
+
+## Overview
+The Viral Thread Generator is a sophisticated system that creates engaging Twitter-style thread content using AI. It analyzes sentiment, style, and optimizes content for maximum engagement using various metrics and style indicators.
+
+## Architecture
+### Component Flow
+
+```mermaid
+flowchart TB
+    A[API Request] --> B[GenerateThreadView]
+    B --> C[EnhancedViralThreadGenerator]
+    C --> D[Hook Generation]
+    C --> E[Thread Generation]
+    C --> F[Counterpoint Generation]
+    C --> G[Finale Generation]
+    
+    D --> H[Tweet Optimization]
+    E --> H
+    F --> H
+    G --> H
+    
+    H --> I[TweetMetricsAnalyzer]
+    H --> J[TwitterStyleAnalyzer]
+    
+    I --> K[Final Response]
+    J --> K
+    
+    subgraph "Analysis Components"
+        I
+        J
+    end
+    
+    subgraph "Content Generation"
+        D
+        E
+        F
+        G
+    end
+```
+
+## Core Components
+
+### 1. TweetMetricsAnalyzer
+Analyzes tweets for various metrics including sentiment, emoji usage, and text statistics.
+
+```python
+metrics = {
+    "sentiment": str,          # POSITIVE/NEGATIVE
+    "confidence": float,       # Sentiment confidence score
+    "subjectivity": float,     # Text subjectivity score
+    "polarity": float,        # Text polarity score
+    "emoji_count": int,       # Number of emojis
+    "character_count": int,   # Total characters
+    "word_count": int        # Total words
+}
+```
+
+### 2. TwitterStyleAnalyzer
+Evaluates tweets for style and engagement potential using predefined indicators.
+
+Key Metrics:
+- Sass Level
+- Meme Density
+- Engagement Potential
+- Dark Humor Score
+- Slang Usage
+- Viral Format Count
+- Contemporary Score
+- Perspective Balance
+
+### 3. EnhancedViralThreadGenerator
+Main orchestrator that generates complete thread content using various prompts and chains.
+
+#### Generation Process:
+1. Hook Creation
+2. Supporting Tweets
+3. Opposing Tweets
+4. Counterpoints
+5. Finale
+6. Tweet Optimization
+
+## API Endpoints
+
+### Generate Thread
+```
+POST /api/fact-check/
+```
+
+#### Request Body
+```json
+{
+    "topic": "string"  // Required: Topic for thread generation
+}
+```
+
+#### Response Format
+```json
+[
+    {
+        "position": 1,
+        "content": "string",
+        "metrics": {
+            "basic_metrics": {
+                "sentiment": "string",
+                "confidence": 0.0,
+                "subjectivity": 0.0,
+                "polarity": 0.0,
+                "emoji_count": 0,
+                "character_count": 0,
+                "word_count": 0
+            },
+            "style_metrics": {
+                "sass_level": 0.0,
+                "meme_density": 0.0,
+                "engagement_potential": 0.0,
+                "dark_humor_score": 0.0,
+                "slang_usage": 0.0,
+                "style_tags": ["string"],
+                "optimal_posting_time": "string"
+            }
+        }
+    }
+]
+```
+
+## Error Handling
+
+### HTTP Status Codes
+- 200: Successful thread generation
+- 400: Missing required topic
+- 500: Internal server error during generation
+
+### Error Response Format
+```json
+{
+    "error": "string"  // Error description
+}
+```
+
+## Configuration
+
+### Required Environment Variables
+```python
+GOOGLE_API_KEY = "your-google-api-key"  # Required for Gemini Pro API
+```
+
+## Style Indicators
+The system uses various predefined style indicators for content analysis:
+
+- Emotional Triggers
+- Engagement Words
+- Power Words
+- Meme Phrases
+- Sass Words
+- Dark Humor
+- Internet Slang
+- Viral Formats
+- Argument Starters
+- Current Year Slang
+- Transitions
+- Perspective Markers
+
+
+
+
