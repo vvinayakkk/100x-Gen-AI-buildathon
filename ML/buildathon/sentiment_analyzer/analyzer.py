@@ -157,33 +157,53 @@ class UltraAdvancedTweetAnalyzer:
         ]
 
     def _deep_emotion_analysis(self, text):
-        """Comprehensive emotion profiling"""
+        """Comprehensive emotion profiling with balanced probabilities"""
         try:
-            emotions = self.models['emotion_deep'](text)
-            emotion_dict = {
-                'anger': 0.0,
-                'disgust': 0.0,
-                'fear': 0.0,
-                'joy': 0.0,
-                'neutral': 0.0,
-                'sadness': 0.0,
-                'surprise': 0.0
-            }
+            # Get raw emotions from the model
+            emotions_output = self.models['emotion_deep'](text, return_all_scores=True)[0]
             
-            # Convert list of emotions to dictionary format
-            for emotion in emotions:
-                emotion_dict[emotion['label']] = float(emotion['score'])
+            # Convert to dictionary and apply softmax for proper probability distribution
+            emotion_scores = {item['label']: float(item['score']) for item in emotions_output}
             
+            # Apply softmax to ensure probabilities sum to 1
+            scores = np.array(list(emotion_scores.values()))
+            exp_scores = np.exp(scores - np.max(scores))  # Subtract max for numerical stability
+            softmax_scores = exp_scores / exp_scores.sum()
+            
+            # Create final emotion dictionary with normalized probabilities
+            emotion_dict = dict(zip(emotion_scores.keys(), softmax_scores))
+            
+            # Find dominant emotion
             dominant_emotion = max(emotion_dict.items(), key=lambda x: x[1])[0]
             
+            # Ensure all emotion categories are present
+            final_emotions = {
+                'anger': emotion_dict.get('anger', 0.0),
+                'disgust': emotion_dict.get('disgust', 0.0),
+                'fear': emotion_dict.get('fear', 0.0),
+                'joy': emotion_dict.get('joy', 0.0),
+                'neutral': emotion_dict.get('neutral', 0.0),
+                'sadness': emotion_dict.get('sadness', 0.0),
+                'surprise': emotion_dict.get('surprise', 0.0)
+            }
+            
             return {
-                'detailed_emotions': emotion_dict,
+                'detailed_emotions': final_emotions,
                 'dominant_emotion': dominant_emotion
             }
         except Exception as e:
             logging.error(f"Error in emotion analysis: {str(e)}")
+            # Fallback with balanced neutral emotions
             return {
-                'detailed_emotions': {},
+                'detailed_emotions': {
+                    'anger': 0.14285714,
+                    'disgust': 0.14285714,
+                    'fear': 0.14285714,
+                    'joy': 0.14285714,
+                    'neutral': 0.14285714,
+                    'sadness': 0.14285714,
+                    'surprise': 0.14285714
+                },
                 'dominant_emotion': 'neutral'
             }
 

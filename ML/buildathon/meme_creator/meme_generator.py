@@ -112,8 +112,8 @@ class MemeGenerator:
         )
         
         return {
-            'template_name': meme_response.template_name,
-            'captions': meme_response.text_array,
+            # 'template_name': meme_response.template_name,
+            # 'captions': meme_response.text_array,
             'url': meme_data['url'],
-            'page_url': meme_data['page_url']
+          # 'page_url': meme_data['page_url']
         }

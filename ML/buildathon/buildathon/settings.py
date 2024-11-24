@@ -36,7 +36,7 @@ GOOGLE_API_KEY = config('GOOGLE_API_KEY')
 
 INSTALLED_APPS = [
     'corsheaders',
-    #'context_bridge',
+   'context_bridge',
     'fact_checker',
     'impersonation',
     'meme_creator',
