@@ -100,10 +100,72 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 @mention analyze_context [url]
 ```
 
-### Impersonation Agent
-- Analyzes writing patterns
-- Mimics specific styles
-- Generates contextual responses
+Celebrity Impersonation - Working Mechanism
+Core Workflow
+
+Celebrity Selection
+pythonCopy# System maintains a database of celebrity profiles:
+celebrities = [
+    {
+        "id": 1,
+        "name": "Elon Musk",
+        "background": "Tech visionary...",
+        "tone": "Raw, unfiltered...",
+        "speaking_style": "Blunt technical metaphors...",
+        "emotional_range": [...],
+        "example_tweets": [...]
+    },
+    # More celebrities...
+]
+
+Request Processing
+pythonCopy@api_view(['POST'])
+def generate_impersonation(request):
+    # Extract data
+    celebrity_id = request.data.get('celebrity_id')
+    tweet = request.data.get('tweet')
+
+    # Find matching celebrity profile
+    celebrity = next((c for c in celebrities if c['id'] == celebrity_id), None)
+
+Impersonation Generation
+pythonCopy# Initialize AI agent with specific settings
+agent = CelebrityImpersonationAgent(
+    api_key=settings.GOOGLE_API_KEY,
+    temperature=0.7  # Controls response creativity
+)
+
+# Generate response using celebrity profile
+response = agent.impersonate(tweet, celebrity)
+
+Response Storage
+pythonCopy# Store generated response
+new_impersonation = {
+    "id": len(impersonations) + 1,
+    "celebrity_name": celebrity['name'],
+    "input_tweet": tweet,
+    "response": response
+}
+impersonations.append(new_impersonation)
+
+
+Key Components
+1. Celebrity Profiles
+
+Contains personality traits
+Writing style patterns
+Example tweets for reference
+Emotional range indicators
+
+2. Impersonation Agent
+
+Uses celebrity profile data
+Analyzes input tweet
+Generates contextual response
+Maintains celebrity's tone and style
+
+3. Response Generation
+Input → Processing → Output
 
 ```python
 # Example usage
