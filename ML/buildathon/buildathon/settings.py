@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     #'context_bridge',
     'fact_checker',
     'impersonation',
-    #'meme_creator',
+    'meme_creator',
    # 'picture_perfect',
    # 'sreenshot_research',
     'sentiment_analyzer',
