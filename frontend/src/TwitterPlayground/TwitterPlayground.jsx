@@ -8,7 +8,16 @@ const TwitterPlayground = () => {
   const [charLimit, setCharLimit] = useState(280);
   const [thread, setThread] = useState([]); // Thread of replies
   const [loadingAction, setLoadingAction] = useState(""); // Track loading state
+  const [selectedPersona, setSelectedPersona] = useState(null); // For dropdown
   const textareaRef = useRef(null); // Reference for the textarea
+
+  const personas = [
+    "Elon Musk",
+    "Steve Jobs",
+    "Albert Einstein",
+    "Oprah Winfrey",
+    "William Shakespeare",
+  ];
 
   // Adjust textarea height dynamically
   useEffect(() => {
@@ -18,7 +27,7 @@ const TwitterPlayground = () => {
     }
   }, [text]);
 
-  const handleAction = (action) => {
+  const handleAction = (action, persona = null) => {
     if (!text.trim()) {
       alert("Please enter some text to perform an action.");
       return;
@@ -26,14 +35,14 @@ const TwitterPlayground = () => {
 
     setLoadingAction(action); // Set button's loading state
     setTimeout(() => {
-      const response = generateSampleResponse(action); // Simulated API response
+      const response = generateSampleResponse(action, persona); // Simulated API response
       setThread((prev) => [
         ...prev,
         {
-          action,
+          action: persona ? `${action} (${persona})` : action,
           response,
           username: "TweetVichar",
-          handle: "@tweetvochar",
+          handle: "@tweetvichar",
           timestamp: "Just now",
         },
       ]); // Add response to thread
@@ -41,7 +50,11 @@ const TwitterPlayground = () => {
     }, 1500);
   };
 
-  const generateSampleResponse = (action) => {
+  const generateSampleResponse = (action, persona) => {
+    if (persona) {
+      return `In the perspective of ${persona}: "${text} might change the world!"`;
+    }
+
     switch (action) {
       case "Analyze":
         return `This tweet contains ${text.split(" ").length} words and ${
@@ -54,7 +67,7 @@ const TwitterPlayground = () => {
       case "Summarize":
         return "Summary: You've made your point clear and concise.";
       default:
-        return "xt ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ips";
+        return "Some default response.";
     }
   };
 
@@ -97,22 +110,69 @@ const TwitterPlayground = () => {
 
       {/* Action Buttons */}
       <div className="action-buttons">
-        {[
-          "How would Elon Musk react to this",
-          "Check facts",
-          "Sentiment Analyzer",
-          "Create a meme",
-          "Simplify this",
-        ].map((action) => (
+        {/* Dropdown Button */}
+        <div className="dropdown">
           <button
-            key={action}
             className="action-btn"
-            onClick={() => handleAction(action)}
-            disabled={loadingAction === action}
+            disabled={loadingAction.startsWith("How would")}
           >
-            {loadingAction === action ? "Loading..." : action}
+            {loadingAction.startsWith("How would")
+              ? "Loading..."
+              : "How would they react?"}
           </button>
-        ))}
+          <div className="dropdown-content">
+            {personas.map((persona) => (
+              <div
+                key={persona}
+                className="dropdown-item"
+                onClick={() => handleAction("How would they react", persona)}
+              >
+                {persona}
+              </div>
+            ))}
+          </div>
+        </div>
+        <button
+          className="action-btn"
+          onClick={() => handleAction("Analyze")}
+          disabled={loadingAction === "Analyze"}
+        >
+          {loadingAction === "Sentiment Analyzer"
+            ? "Loading..."
+            : "Sentiment Analyzer"}
+        </button>
+        <button
+          className="action-btn"
+          onClick={() => handleAction("Meme")}
+          disabled={loadingAction === "Meme"}
+        >
+          {loadingAction === "Meme" ? "Loading..." : "Create a meme"}
+        </button>
+        <button
+          className="action-btn"
+          onClick={() => handleAction("Summarize")}
+          disabled={loadingAction === "Summarize"}
+        >
+          {loadingAction === "Simplify the tweet"
+            ? "Loading..."
+            : "Simplify the tweet"}
+        </button>
+        <button
+          className="action-btn"
+          onClick={() => handleAction("Summarize")}
+          disabled={loadingAction === "Summarize"}
+        >
+          {loadingAction === "Check facts" ? "Loading..." : "Check facts"}
+        </button>
+        <button
+          className="action-btn"
+          onClick={() => handleAction("Summarize")}
+          disabled={loadingAction === "Summarize"}
+        >
+          {loadingAction === "Viral threads generator"
+            ? "Loading..."
+            : "Viral threads generator"}
+        </button>
       </div>
 
       {/* Thread Section */}
