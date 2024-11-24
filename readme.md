@@ -12,7 +12,7 @@ An intelligent bot for Bluesky that processes mentions and provides AI-powered r
 - **Fact Checking**: Verifies claims with supporting references.
 - **Advanced In-Depth Sentiment Analysis**: Provides in-depth emotional context analysis for conversations.
 - **Meme Generation**: Suggests creative captions and meme formats.
-- **Context Translation**: Simplifies complex discussions into accessible language.
+- **Tweet Helper**: give the bot specific instructions and it will follow it.
 
 ---
 
