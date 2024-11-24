@@ -20,15 +20,36 @@ An intelligent bot for Bluesky that processes mentions and provides AI-powered r
 
 ```plaintext
 /
-├── server/          # Node.js Bluesky Bot Server
-│   ├── src/         # Source code
-│   ├── package.json # Dependencies
-│   └── yarn.lock    # Yarn lockfile
+├── client/                    # Frontend client (unspecified framework or tools)
+├── frontend/                  # Additional frontend resources
 │
-└── ML/             # Django ML API Service
-    ├── api/        # API endpoints
-    ├── models/     # ML models
-    └── manage.py   # Django management script
+├── ML/                        # Machine Learning services
+│   ├── buildathon/            # Core ML buildathon projects
+│   │   ├── context_bridge/    # Module for connecting or linking contexts
+│   │   ├── fact_checker/      # Module for verifying facts
+│   │   ├── impersonation/     # Module to analyze impersonation threats
+│   │   ├── meme_creator/      # Module to create memes using AI
+│   │   ├── picture_perfect/   # Image enhancement or analysis module
+│   │   ├── screenshot_research/ # Analyzing screenshots for insights
+│   │   ├── sentiment_analyzer/ # Sentiment analysis tool
+│   │   └── viral_thread/      # Module to identify viral content threads
+│   ├── myenv/                 # Python virtual environment for dependencies
+│   ├── db.sqlite3             # SQLite database for development
+│   ├── manage.py              # Django management script
+│   ├── requirements.txt       # Python dependencies
+│   ├── .env                   # Environment variables for secrets/configs
+│   ├── notebooks/             # Jupyter notebooks for experiments and prototyping
+│   ├── sample_responses/      # Example API responses or dataset samples
+│   └── scripts/               # Utility scripts for tasks (e.g., data preprocessing)
+│
+├── server/                    # Node.js Bluesky bot server
+│   ├── src/                   # Source code for the bot functionality
+│   ├── package.json           # Node.js dependencies
+│   └── yarn.lock              # Yarn lockfile for consistent installs
+│
+├── .gitignore                 # Ignored files/folders for Git
+└── readme.md                  # Project documentation
+
 ```
 
 ---
