@@ -117,8 +117,11 @@ const processAndUploadImage = async (imageUrl) => {
 
 const processMention = async (mention, rootPost) => {
   try {
-    const user_text = mention.record.text;
+    const user_text = mention.record.text.split('bsky.social')[1].trim();
     const root_text = rootPost ? rootPost.text : '';
+
+    console.log(`User text: ${user_text}`);
+    console.log(`Tweet text: ${root_text}`);
     
     const data = {
       userCommand: user_text,
@@ -163,13 +166,31 @@ const processMention = async (mention, rootPost) => {
     }
     else if (response.data.category === "Sentiment Analyzer" ){
       var ai_response = response.data.result.analysis.emotion_profile.dominant_emotion;
-      console.log('AI Response:', ai_response);
-      return await replyToMention(mention, rootPost, `By my analysis this tweet is : ${ai_response}`);
-    }
-    else if (response.data.category === "Context Bridge" ){
-      var ai_texts = response.data;
-      for( ai_text of ai_texts){
-        await replyToMention(mention, rootPost, ai_text.content);
+      var detailed_emo_arr = response.data.result.analysis.emotion_profile.detailed_emotions;
+      var data_str = ""
+      Object.keys(detailed_emo_arr).forEach(key => {
+        var temp = Math.floor((Number(detailed_emo_arr[key]) *100));
+        data_str += temp+  ","
+      });
+      console.log(data_str);
+      var url = process.env.CHART + data_str;
+      const imageEmbed = await processAndUploadImage(url);
+      if (imageEmbed) {    
+        const response = await agent.post({
+          text: `By my analysis this tweet is : ${ai_response}`,
+          embed: imageEmbed,
+          reply: {
+            root: {
+              uri: rootPost?.uri || mention.uri,
+              cid: rootPost?.cid || mention.cid,
+            },
+            parent: {
+              uri: mention.uri,
+              cid: mention.cid,
+            },
+          },
+        });
+        console.log('Successfully posted image response');
       }
     }
     else if(response.data.category === "Meme Creator"){
@@ -191,6 +212,15 @@ const processMention = async (mention, rootPost) => {
             },
           });
           console.log('Successfully posted image response');
+    }
+    
+  }
+  else if (response.data.category === "Generic" ){
+    var ai_texts = response.data.result.result;
+    var res_arr = splitContentIntoChunks(ai_texts);
+    console.log('AI Response:', res_arr);
+    for(const res of res_arr){
+      await replyToMention(mention, rootPost,res);
     }
   }
     return true;
@@ -284,7 +314,7 @@ const runBot = async () => {
   await checkMentions();
   
   // Set up interval with longer delay to avoid rate limits
-  setInterval(checkMentions, 30000);
+  setInterval(checkMentions, 120000);
 };
 
 process.on('unhandledRejection', (error) => {
