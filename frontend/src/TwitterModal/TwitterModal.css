@@ -1,0 +1,114 @@
+/* Modal Overlay */
+.twitter-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.85); /* Darker overlay for premium feel */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal Container */
+.twitter-modal {
+  background: linear-gradient(145deg, #ffffff, #f4f8fc); /* Subtle gradient */
+  width: 500px;
+  max-width: 90%;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  animation: fadeIn 0.4s ease-out;
+  transform: scale(0.9);
+  transition: transform 0.3s ease-out;
+}
+
+.animated-modal {
+  transform: scale(1); /* Scale up effect */
+}
+
+/* Modal Header */
+.modal-header {
+  background: #1da1f2; /* Twitter blue */
+  color: #ffffff;
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-logo {
+  width: 50px;
+  height: auto;
+  margin-bottom: 12px;
+}
+
+h2 {
+  font-size: 20px;
+  margin: 0;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 20px;
+  color: #14171a; /* Twitter dark text */
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.highlight-box {
+  background: #f0f8ff; /* Subtle light blue */
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+  color: #1da1f2; /* Twitter blue */
+  text-align: left;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal Footer */
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #e1e8ed;
+  background: #f9fbfc;
+}
+
+.okay-btn {
+  background: #1da1f2; /* Twitter blue */
+  color: #ffffff;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.okay-btn:hover {
+  background: #198cd6;
+  transform: translateY(-2px);
+}
+
+.okay-btn:active {
+  background: #147ac6;
+  transform: translateY(1px);
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
