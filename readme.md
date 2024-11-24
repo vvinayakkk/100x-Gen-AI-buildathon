@@ -104,17 +104,145 @@ An intelligent bot for Bluesky that processes mentions and provides AI-powered r
 
 ## 🤖 Available Agents
 
-### Screenshot + Research Agent
-- Captures visual content.
-- Performs context analysis.
-- Generates insightful summaries.
+# Screenshot + Research Agent - Working Mechanism
 
-```python
-# Example usage
-@mention analyze_context [url]
+## Core Components & Flow
+
+### 1. Image Processing Pipeline
+```mermaid
+graph TD
+    A[Tweet Screenshot] --> B[Image Preprocessing]
+    B --> C[OCR Text Extraction]
+    C --> D[Text Analysis]
+    D --> E[Report Generation]
 ```
 
----
+### 2. Key Components
+
+#### A. TweetAnalyzer Class
+The main engine that processes tweet screenshots through multiple stages:
+
+```python
+class TweetAnalyzer:
+    def __init__(self):
+        # Initialize components:
+        self.llm = GoogleGenerativeAI(model="gemini-pro")  # AI analysis
+        self.ocr = PaddleOCR()                            # Text extraction
+```
+
+#### B. Processing Pipeline
+
+1. **Image Preprocessing**
+```python
+def preprocess_image(self, image_path):
+    # Convert to grayscale
+    # Apply binary threshold
+    # Reduce noise
+    return processed_image
+```
+
+2. **Text Extraction**
+```python
+def extract_text_from_image(self, image_path):
+    # Use PaddleOCR to extract text
+    result = self.ocr.ocr(image)
+    return extracted_text
+```
+
+3. **Content Analysis**
+```python
+async def analyze_with_gemini(self, text):
+    # Analyze using two prompt chains:
+    # 1. Main content analysis
+    # 2. Metadata extraction
+    return {
+        "analysis": content_analysis,
+        "metadata": metadata_analysis
+    }
+```
+
+### 3. Analysis Components
+
+#### Content Analysis Includes:
+- Summary of tweet
+- Main topics
+- Key points/insights
+- Sentiment analysis
+- Context/background
+- Implications
+- Suggested replies
+
+#### Metadata Extraction:
+- @mentions
+- #hashtags
+- URLs
+- Dates/timestamps
+- Locations
+- Organizations
+
+### 4. API Usage
+
+```http
+POST /analyze_tweet/
+Content-Type: multipart/form-data
+
+file: tweet_screenshot.jpg
+```
+
+Response:
+```json
+{
+    "success": true,
+    "report": "Formatted analysis report",
+    "extracted_text": "Original tweet text",
+    "analysis": {
+        "content_analysis": "...",
+        "metadata": "..."
+    }
+}
+```
+
+### 5. Error Handling
+
+The system handles various potential failures:
+- Invalid image formats
+- OCR extraction failures
+- AI analysis errors
+- File processing issues
+
+## Technical Requirements
+
+- Google Gemini Pro API key
+- PaddleOCR
+- OpenCV for image processing
+- Async support for analysis
+- Temporary file storage
+
+## Processing Steps
+
+1. **Input Handling**
+   - Receive tweet screenshot
+   - Validate image format
+   - Create temporary file
+
+2. **Image Processing**
+   - Convert to grayscale
+   - Apply thresholding
+   - Denoise image
+
+3. **Text Extraction**
+   - Process image with PaddleOCR
+   - Extract readable text
+
+4. **Analysis**
+   - Process text with Gemini Pro
+   - Generate detailed analysis
+   - Extract metadata
+
+5. **Report Generation**
+   - Compile analysis results
+   - Format readable report
+   - Return structured response
 
 ## Celebrity Impersonation Agent
 
