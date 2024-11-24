@@ -183,7 +183,7 @@ async def analyze_with_gemini(self, text):
 ### 4. API Usage
 
 ```http
-"/api/analyze/"
+POST "/api/analyze/"
 Content-Type: multipart/form-data
 
 file: tweet_screenshot.jpg
@@ -302,3 +302,137 @@ impersonations.append(new_impersonation)
 - **Dynamic Learning**: Continuously update celebrity profiles based on new data (e.g., recent tweets).
 - **Emotion Calibration**: Fine-tune responses to match the exact emotional tone of the input.
 - **Custom Profiles**: Allow users to create custom celebrity-style profiles for broader use cases.
+
+### Fact Checking Agent
+
+The Fact Checking Agent provides comprehensive claim verification using multiple analysis methods and AI models.
+
+#### Architecture
+
+The fact checker combines several sophisticated approaches:
+- Natural Language Processing using NLTK
+- Google's Gemini AI for advanced analysis
+- Zero-shot classification for probability assessment
+- Wikipedia integration for reference data
+- LangChain for structured analysis
+- Multi-threaded execution for parallel processing
+
+#### Key Features
+
+- **Multi-Source Verification**: Combines Wikipedia research, AI analysis, and temporal consistency checks
+- **Credibility Scoring**: Produces a normalized credibility score (0-1) based on multiple factors
+- **Temporal Analysis**: Identifies and validates time-based claims and inconsistencies
+- **Parallel Processing**: Executes multiple analysis methods concurrently for faster results
+- **Comprehensive Results**: Provides detailed analysis results including sources and confidence levels
+
+#### Usage
+
+```python
+# API Endpoint
+POST /api/fact-check
+
+# Request Body
+{
+    "claim": "Your claim text here"
+}
+
+# Response Format
+{
+    "claim": "Original claim",
+    "timestamp": "ISO timestamp",
+    "analyses": {
+        "wikipedia": {
+            "found_articles": 3,
+            "articles": [...]
+        },
+        "probability": {
+            "labels": ["fact", "opinion", "misinformation"],
+            "scores": [0.8, 0.1, 0.1]
+        },
+        "temporal": {
+            "dates_found": [...],
+            "has_future_dates": false,
+            "temporal_inconsistencies": []
+        },
+        "gemini": "Detailed analysis...",
+        "langchain": "Structured analysis..."
+    },
+    "credibility_score": 0.85,
+    "verdict": "Highly Likely True"
+}
+```
+
+#### Verdicts
+
+The agent provides five possible verdicts based on the credibility score:
+- **Highly Likely True** (>0.8)
+- **Likely True** (0.6-0.8)
+- **Uncertain** (0.4-0.6)
+- **Likely False** (0.2-0.4)
+- **Highly Likely False** (<0.2)
+
+#### Implementation Details
+
+```python
+# Example usage in code
+from api.fact_checker import EnhancedFactChecker
+
+checker = EnhancedFactChecker()
+results = checker.comprehensive_fact_check("Your claim here")
+```
+#### Process Flow
+
+The following diagram illustrates the fact-checking process:
+
+```mermaid
+graph TD
+    A[Claim Input] --> B[Initialize Parallel Processing]
+    
+    subgraph Parallel Analysis
+        C[Wikipedia Search]
+        D[Probability Check]
+        E[Temporal Analysis]
+    end
+    
+    B --> C
+    B --> D
+    B --> E
+    
+    C -->|Context| F[Gemini Analysis]
+    
+    subgraph Results Collection
+        C --> G[Wiki Results]
+        D --> H[Probability Results]
+        E --> I[Temporal Results]
+        F --> J[Gemini Results]
+    end
+    
+    G --> K[LangChain Analysis]
+    H --> K
+    I --> K
+    J --> K
+    
+    K --> L[Calculate Credibility Score]
+    L --> M[Generate Verdict]
+    
+    style Parallel Analysis fill:#f0f0f0,stroke:#333,stroke-width:2px
+    style Results Collection fill:#e6f3ff,stroke:#333,stroke-width:2px
+```
+
+#### Architecture
+
+The fact checker combines several sophisticated approaches:
+- Natural Language Processing using NLTK
+- Google's Gemini AI for advanced analysis
+- Zero-shot classification for probability assessment
+- Wikipedia integration for reference data
+- LangChain for structured analysis
+- Multi-threaded execution for parallel processing
+
+#### Dependencies
+
+- NLTK for natural language processing
+- Google Generative AI (Gemini)
+- Transformers for zero-shot classification
+- Wikipedia-API for reference data
+- LangChain for structured prompting
