@@ -45,7 +45,7 @@ class MemeGenerator:
             3. Make sure the number of captions matches the template's box count
             4. Each caption should build on the previous one for maximum humor impact
             5. Don't just restate the input - transform it into meme gold!
-
+            6. Only use meme available in template info,dont use anything else strictly
             Format the output as a JSON with template_name and text_array fields.
             """),
             ("human", "{input_text}")
