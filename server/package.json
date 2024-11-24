@@ -1,0 +1,16 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.18",
+    "dotenv": "^16.4.5",
+    "nodemon": "^3.1.7",
+    "sharp": "^0.33.5"
+  }
+}
