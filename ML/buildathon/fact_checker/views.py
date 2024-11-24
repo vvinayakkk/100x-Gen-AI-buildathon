@@ -13,7 +13,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from transformers import pipeline
 import wikipedia
 from langchain import PromptTemplate, LLMChain
-from langchain_google_genai import GoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 import google.generativeai as genai
 from concurrent.futures import ThreadPoolExecutor
 from django.conf import settings
@@ -25,7 +25,7 @@ class EnhancedFactChecker:
 
         # Initialize Gemini
         genai.configure(api_key=settings.GOOGLE_API_KEY)
-        self.gemini = GoogleGenerativeAI(
+        self.gemini = ChatGoogleGenerativeAI(
             model="gemini-pro",
             google_api_key=settings.GOOGLE_API_KEY,
             temperature=0.1
@@ -41,7 +41,7 @@ class EnhancedFactChecker:
         self.fact_check_prompt = PromptTemplate(
             input_variables=["claim"],
             template="""
-            Please analyze the following claim and provide a detailed fact-check:
+            Please analyze the following claim and provide a detailed fact-check in 100 concised characters:
             Claim: {claim}
 
             Provide your analysis in the following format:
@@ -49,6 +49,8 @@ class EnhancedFactChecker:
             2. Supporting evidence
             3. Confidence score (0-100)
             4. Sources
+            Remember 300 characters not words.Shrink it to 100 characters.
+            Summarise in 100 characters or less.
             """
         )
         self.chain = LLMChain(llm=self.gemini, prompt=self.fact_check_prompt)
@@ -88,7 +90,7 @@ class EnhancedFactChecker:
     def _analyze_with_gemini(self, claim, context=""):
         """Use Gemini for advanced analysis"""
         prompt = f"""
-        Analyze the following claim for factual accuracy:
+        Analyze the following claim for factual accuracy in 300 characters not words :
         Claim: {claim}
 
         Additional context: {context}
@@ -98,6 +100,7 @@ class EnhancedFactChecker:
         2. Key points of verification
         3. Potential misinformation indicators
         4. Confidence level (0-100)
+        Remeber to summarise to 300 characters or less
         """
 
         try:
@@ -147,7 +150,22 @@ class EnhancedFactChecker:
                 continue
 
         return temporal_analysis
-
+    
+    # def simple_gemini_chat(self, query):
+    #     """Handles a simple chat interaction using LangChain."""
+    #     try:
+    #         response = self.chat_chain.invoke({"query": query})  # Using invoke instead of run
+    #         return {
+    #             'query': query,
+    #             'response': response['text']  # Accessing the text field from response
+    #         }
+    #     except Exception as e:
+    #         print(f"Chat error: {str(e)}")
+    #         return {
+    #             'query': query,
+    #             'error': f"Error generating response: {str(e)}"
+    #         }
+        
     def _calculate_credibility_score(self, analyses):
         """Calculate overall credibility score based on all analyses"""
         score = 1.0
@@ -235,6 +253,8 @@ class EnhancedFactChecker:
         results['verdict'] = self._get_verdict(credibility_score)
 
         return results
+    
+    
 
 class FactCheckView(APIView):
     def __init__(self, *args, **kwargs):
@@ -252,10 +272,36 @@ class FactCheckView(APIView):
 
         try:
             results = self.fact_checker.comprehensive_fact_check(claim)
-            return Response(results, status=status.HTTP_200_OK)
+            filtered_response = {
+                'analyses': results.get('analyses', {}),
+                'langchain': results.get('analyses', {}).get('langchain', None)
+            }
+            return Response(filtered_response, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
                 {'error': f'Error processing claim: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+class SimpleGeminiChatView(APIView):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fact_checker = EnhancedFactChecker()
+
+    def post(self, request):
+        query = request.data.get('query')
+
+        if not query:
+            return Response(
+                {'error': 'Please provide a query for the chat'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            result = self.fact_checker.simple_gemini_chat(query)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {'error': f'Error processing query: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

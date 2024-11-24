@@ -413,59 +413,168 @@ celebrities = [
         "example_tweets": [
             "Empowerment starts from within. Believe in yourself.",
             "Kindness is the most powerful superpower.",
-            "Together, we can create a better world for everyone."
-        ]
-    }
+            "Together, we can create a better world for everyone."
+]
+},
+{
+    "id": 28,
+    "name": "Kanye West",
+    "background": "Iconic rapper, producer, and fashion designer known for pushing boundaries and sparking conversations.",
+    "tone": "Bold, visionary, and often controversial.",
+    "speaking_style": "Unfiltered and philosophical, mixing grandeur with introspection.",
+    "emotional_range": [
+      
+        "The pursuit of greatness and creative freedom",
+        "Reflections on fame, legacy, and the human condition",
+        "Challenging societal norms and embracing individuality"
+      
+    ],
+    "example_tweets": [
+      "I’m not afraid to be misunderstood. That’s the price of being ahead.",
+      "Creativity is a fight against comfort zones. Stay uncomfortable.",
+      "The world can be loud, but the truth is always quiet."
+    ]
+  },
+  {
+    "id": 29,
+    "name": "Kevin Hart",
+    "background": "Comedian and actor known for his infectious humor and motivational outlook.",
+    "tone": "Uplifting, hilarious, and driven by positivity.",
+    "speaking_style": "High-energy storytelling with a focus on relatability and self-deprecating humor.",
+    "emotional_range": [
+
+        "Turning challenges into opportunities for growth",
+        "Celebrating hard work and resilience",
+        "Finding humor in everyday struggles"
+      
+    ],
+    "example_tweets": [
+      "Success isn’t given, it’s earned with sweat, laughs, and a little bit of crazy.",
+      "Life’s too short to be serious all the time. Smile, even when it’s tough.",
+      "You’ll never lose if you learn to laugh at your mistakes."
+    ]
+  }
+
+
+   
 ]
 
-impersonations = []  # To store generated impersonations
 
 
+
+def extract_celebrity_name(command):
+    """
+    Extract celebrity name by matching against known celebrity names in the array.
+    Returns the closest matching celebrity name or None if no match found.
+    """
+    # Clean the command
+    command = command.lower().strip()
+    
+    # Create a pattern from all celebrity names
+    celebrity_patterns = []
+    for celeb in celebrities:
+        # Get full name and possible variations
+        full_name = celeb['name'].lower()
+        name_parts = full_name.split()
+        
+        # Add full name and individual parts to patterns
+        celebrity_patterns.append(re.escape(full_name))
+        celebrity_patterns.extend(map(re.escape, name_parts))
+    
+    # Create regex pattern - join all names with | (OR)
+    pattern = '|'.join(celebrity_patterns)
+    
+    # Find all matches in the command
+    matches = re.findall(pattern, command.lower())
+    
+    if not matches:
+        return None
+        
+    # If we found matches, find the longest matching name (prefer full names over partial)
+    longest_match = max(matches, key=len)
+    
+    # Find the corresponding celebrity full name
+    for celeb in celebrities:
+        if longest_match in celeb['name'].lower():
+            return celeb['name']
+            
+    return None
+import re
+impersonations = []
 
 @api_view(['GET'])
 def list_celebrities(request):
     return Response(celebrities)
 
-
 @api_view(['GET'])
 def list_impersonations(request):
     return Response(impersonations)
 
+def find_celebrity_by_name(name):
+    """
+    Find a celebrity using case-insensitive partial name matching.
+    Returns (celebrity, matched_name) tuple or (None, None) if no match found.
+    """
+    if not name:
+        return None, None
+    
+    # Clean and prepare the search name
+    search_name = name.strip().lower()
+    
+    # First try exact match (case insensitive)
+    for celebrity in celebrities:
+        if celebrity['name'].lower() == search_name:
+            return celebrity, celebrity['name']
+    
+    # Then try partial match
+    matches = []
+    for celebrity in celebrities:
+        # Create regex pattern that matches parts of the name in any order
+        name_parts = search_name.split()
+        pattern = r'.*'.join(map(re.escape, name_parts))
+        if re.search(pattern, celebrity['name'].lower()):
+            matches.append((celebrity, celebrity['name']))
+    
+    # If we have exactly one match, return it
+    if len(matches) == 1:
+        return matches[0]
+    # If we have multiple matches, return None to indicate ambiguity
+    elif len(matches) > 1:
+        raise ValueError(f"Multiple matches found: {', '.join(m[1] for m in matches)}")
+    
+    return None, None
 
 @api_view(['POST'])
 def generate_impersonation(request):
     try:
-        celebrity_id = request.data.get('celebrity_id')
-        tweet = request.data.get('tweet')
-
-        if not celebrity_id or not tweet:
-            return Response(
-                {'error': 'Both celebrity_id and tweet are required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-            
-        try:
-            celebrity_id = int(celebrity_id)
-        except ValueError:
-            return Response(
-                {'error': 'Invalid celebrity_id format, must be an integer'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Add debugging log
-        print(f"Looking for celebrity with ID: {celebrity_id}")
-        print(f"Available celebrity IDs: {[c['id'] for c in celebrities]}")
+        user_command = request.data.get('user_command')
+        original_tweet = request.data.get('original_tweet')
         
-        # Find celebrity - modified to be more explicit
-        celebrity = None
-        for c in celebrities:
-            if c['id'] == celebrity_id:
-                celebrity = c
-                break
+        print("Command received:", user_command)
+        print("Original tweet:", original_tweet)
+        
+        if not user_command or not original_tweet:
+            return Response(
+                {'error': 'Both user_command and original_tweet are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
+        # Extract celebrity name from command
+        celebrity_name = extract_celebrity_name(user_command)
+        if not celebrity_name:
+            return Response(
+                {'error': 'Could not find a matching celebrity name in the command'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print(f"Matched celebrity name: {celebrity_name}")
+        
+        # Find the celebrity in our array
+        celebrity = next((c for c in celebrities if c['name'] == celebrity_name), None)
+        
         if celebrity is None:
             return Response(
-                {'error': f'Celebrity not found with ID: {celebrity_id}'},
+                {'error': f'Celebrity not found: {celebrity_name}'},
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -476,13 +585,12 @@ def generate_impersonation(request):
         )
 
         # Generate response
-        response = agent.impersonate(tweet, celebrity)
+        response = agent.impersonate(original_tweet, celebrity)
 
         # Store impersonation
         new_impersonation = {
-            "id": len(impersonations) + 1,
-            "celebrity_name": celebrity['name'],
-            "input_tweet": tweet,
+            "celebrity_name": celebrity_name,
+            "input_tweet": original_tweet,
             "response": response
         }
         impersonations.append(new_impersonation)
@@ -490,5 +598,5 @@ def generate_impersonation(request):
         return Response(new_impersonation, status=status.HTTP_201_CREATED)
 
     except Exception as e:
-        print(f"Error processing request: {str(e)}")  # Add error logging
+        print(f"Error processing request: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
