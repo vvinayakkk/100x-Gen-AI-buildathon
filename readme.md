@@ -437,7 +437,7 @@ The fact checker combines several sophisticated approaches:
 - Wikipedia-API for reference data
 - LangChain for structured prompting
 
-# Viral Thread Generator Documentation
+# Viral Thread Generator
 
 ## Overview
 The Viral Thread Generator is a sophisticated system that creates engaging Twitter-style thread content using AI. It analyzes sentiment, style, and optimizes content for maximum engagement using various metrics and style indicators.
@@ -523,7 +523,7 @@ Main orchestrator that generates complete thread content using various prompts a
 
 ### Generate Thread
 ```
-POST /api/fact-check/
+POST /api/generate-thread/
 ```
 
 #### Request Body
@@ -599,6 +599,152 @@ The system uses various predefined style indicators for content analysis:
 - Current Year Slang
 - Transitions
 - Perspective Markers
+
+# AI-Powered Meme Generator Documentation
+
+## Overview
+The Meme Generator is an AI-powered system that creates custom memes by combining intelligent caption generation with template-based image creation. It uses OpenAI's language models for creative text generation and the Imgflip API for meme image creation.
+
+## Architecture
+### System Flow
+
+```mermaid
+flowchart TB
+    A[API Request] --> B[Generate Meme View]
+    B --> C[MemeGenerator]
+    
+    subgraph "Text Generation"
+        C --> D[LangChain Setup]
+        D --> E[Template Selection]
+        E --> F[Caption Generation]
+        F --> G[Text Validation]
+    end
+    
+    subgraph "Image Creation"
+        G --> H[Imgflip API]
+        H --> I[Image URL Generation]
+    end
+    
+    I --> J[Final Response]
+    
+    subgraph "Error Handling"
+        B --> K[Input Validation]
+        C --> L[API Error Handling]
+        H --> M[Image Creation Errors]
+    end
+```
+
+## Core Components
+
+### 1. MemeResponse Model
+Pydantic model for structured meme generation output:
+```python
+class MemeResponse(BaseModel):
+    template_name: str      # Selected meme template name
+    text_array: List[str]   # Array of captions for the meme
+```
+
+### 2. MemeTemplate Class
+Template configuration storage:
+```python
+class MemeTemplate:
+    name: str          # Template name
+    box_count: int     # Number of text boxes
+    template_id: str   # Imgflip template ID
+```
+
+### 3. MemeGenerator
+Main orchestrator for meme creation process:
+- Manages OpenAI integration
+- Handles template selection
+- Processes caption generation
+- Interfaces with Imgflip API
+
+## API Endpoints
+
+### Generate Meme
+```
+POST /api/generate-meme
+```
+
+#### Request Body
+```json
+{
+    "input_text": "string"  // Required: Text prompt for meme generation
+}
+```
+
+#### Response Format
+```json
+{
+    "template_name": "string",    // Name of used template
+    "captions": [                 // Array of generated captions
+        "string"
+    ],
+    "url": "string",             // Direct image URL
+    "page_url": "string"         // Imgflip page URL
+}
+```
+
+## Configuration
+
+### Required Environment Variables
+```python
+OPENAI_API_KEY = "your-openai-api-key"
+IMGFLIP_USERNAME = "your-imgflip-username"
+IMGFLIP_PASSWORD = "your-imgflip-password"
+```
+
+## Generation Process
+
+### 1. Text Generation
+- Input validation
+- Template selection based on content
+- AI-powered caption generation
+- Caption validation and adjustment
+
+### 2. Image Creation
+- Template mapping
+- Caption positioning
+- API communication
+- Error handling
+- URL generation
+
+## Error Handling
+
+### HTTP Status Codes
+- 200: Successful meme generation
+- 400: Invalid input
+- 500: Server/API errors
+
+### Error Response Format
+```json
+{
+    "error": "string"  // Error description
+}
+```
+
+## Template System
+
+### Template Structure
+```python
+templates = {
+    "template_name": MemeTemplate(
+        name="string",
+        box_count=int,
+        template_id="string"
+    )
+}
+```
+
+### Template Management
+- Static template definitions
+- Dynamic template validation
+- Box count verification
+- Template ID mapping
+
+
+
 
 
 
