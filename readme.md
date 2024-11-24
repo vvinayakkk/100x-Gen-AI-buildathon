@@ -1,6 +1,3 @@
-Here's your README file with appropriate markdown formatting, based on the information you've provided:
-
-```markdown
 # Bluesky AI Assistant Bot
 
 An intelligent bot for Bluesky that processes mentions and provides AI-powered responses through various specialized agents. The project combines a Node.js server for Bluesky interaction and a Django-based ML API for intelligence features.
@@ -126,13 +123,13 @@ An intelligent bot for Bluesky that processes mentions and provides AI-powered r
 #### 1. Celebrity Profiles
 Celebrity profiles form the foundation of the impersonation system. Each profile includes:
 
-- **Personality Traits**: Captures the unique characteristics that define the celebrity’s personality.
-- **Writing Style Patterns**: Models the celebrity’s typical sentence structures, choice of vocabulary, and tone (e.g., formal, casual, humorous).
+- **Personality Traits**: Captures the unique characteristics that define the celebrity's personality.
+- **Writing Style Patterns**: Models the celebrity's typical sentence structures, choice of vocabulary, and tone (e.g., formal, casual, humorous).
 - **Example Tweets**: Provides references to how the celebrity interacts on social media, offering insights into their typical communication style.
 - **Emotional Range Indicators**: Highlights the emotional spectrum the celebrity often exhibits, such as optimism, sarcasm, or empathy.
 
 #### 2. Impersonation Agent
-The impersonation agent is the core component that generates responses based on the celebrity’s profile.
+The impersonation agent is the core component that generates responses based on the celebrity's profile.
 
 - **Functionality**:
   - **Uses Celebrity Profile Data**: Leverages traits, writing style, and emotional indicators to stay true to the celebrity's persona.
@@ -145,9 +142,9 @@ The response generation follows a structured approach:
 1. **Input**: Receives a tweet to analyze.
 2. **Processing**: 
    - Evaluates the input tweet for context, emotional tone, and relevance.
-   - Combines input analysis with data from the celebrity’s profile.
+   - Combines input analysis with data from the celebrity's profile.
 3. **Output**: 
-   - Generates a tweet response that aligns with the celebrity’s persona.
+   - Generates a tweet response that aligns with the celebrity's persona.
    - Ensures the tone, language, and emotional range are consistent with the profile.
 
 ---
@@ -177,4 +174,3 @@ impersonations.append(new_impersonation)
 - **Dynamic Learning**: Continuously update celebrity profiles based on new data (e.g., recent tweets).
 - **Emotion Calibration**: Fine-tune responses to match the exact emotional tone of the input.
 - **Custom Profiles**: Allow users to create custom celebrity-style profiles for broader use cases.
-```
