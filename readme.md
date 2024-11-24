@@ -600,7 +600,7 @@ The system uses various predefined style indicators for content analysis:
 - Transitions
 - Perspective Markers
 
-# AI-Powered Meme Generator Documentation
+# AI-Powered Meme Generator
 
 ## Overview
 The Meme Generator is an AI-powered system that creates custom memes by combining intelligent caption generation with template-based image creation. It uses OpenAI's language models for creative text generation and the Imgflip API for meme image creation.
