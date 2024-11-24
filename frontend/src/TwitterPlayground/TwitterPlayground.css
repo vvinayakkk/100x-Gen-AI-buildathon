@@ -156,3 +156,39 @@
   resize: none; /* Prevent manual resizing */
   overflow: hidden; /* Hide scrollbars */
 }
+
+/* Action Buttons */
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 4 buttons per row */
+  gap: 8px; /* Spacing between buttons */
+  margin-top: 8px;
+  justify-content: center; /* Center-align the entire grid */
+}
+
+.action-btn {
+  padding: 8px;
+  border: none;
+  background-color: #1da1f2;
+  color: white;
+  font-size: 14px;
+  /* font-weight: bold; */
+  border-radius: 20px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.3s ease;
+  height: 60px;
+  font-family: "poppins";
+  font-weight: normal !important;
+}
+
+.action-btn:disabled {
+  background-color: #a1d3f2;
+  cursor: not-allowed;
+}
+
+.action-btn:hover {
+  background-color: transparent;
+  border: 1px solid #1da1f2;
+  color: black;
+}

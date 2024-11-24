@@ -1,128 +1,3 @@
-// import React, { useState } from "react";
-// import { FiImage, FiSmile, FiMapPin, FiBarChart2 } from "react-icons/fi";
-// import "./TwitterPlayground.css";
-
-// const TwitterPlayground = () => {
-//   const [text, setText] = useState("");
-//   const [charLimit, setCharLimit] = useState(280);
-//   const [thread, setThread] = useState([]); // To hold the thread responses
-//   const [isLoading, setIsLoading] = useState(false); // Loading state for API call
-
-//   const handleAction = (action) => {
-//     if (!text.trim()) {
-//       alert("Please enter some text to analyze.");
-//       return;
-//     }
-
-//     setIsLoading(true); // Simulate loading
-//     setTimeout(() => {
-//       // Simulate API response
-//       const response = generateSampleResponse(action);
-//       setThread((prev) => [...prev, { action, response }]); // Append response to thread
-//       setIsLoading(false); // Stop loading
-//     }, 1500);
-//   };
-
-//   const generateSampleResponse = (action) => {
-//     switch (action) {
-//       case "Analyze":
-//         return `Analysis: Your text contains ${
-//           text.split(" ").length
-//         } words and is ${text.length} characters long.`;
-//       case "Meme":
-//         return "Meme Response: This could be turned into a meme about procrastination! 😂";
-//       case "Translate":
-//         return "Translation: (Sample) This text translates to 'Hola Mundo' in Spanish.";
-//       case "Summarize":
-//         return "Summary: Your message boils down to a concise and clear point!";
-//       default:
-//         return "Unknown action!";
-//     }
-//   };
-
-//   return (
-//     <div className="twitter-playground">
-//       {/* Profile + Input */}
-//       <div className="input-section">
-//         <img
-//           src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"
-//           alt="Profile"
-//           className="profile-picture"
-//         />
-//         <textarea
-//           placeholder="What's happening?"
-//           value={text}
-//           onChange={(e) => setText(e.target.value)}
-//           maxLength={charLimit}
-//           className="tweet-input"
-//         />
-//       </div>
-
-//       {/* Toolbar */}
-//       <div className="toolbar">
-//         <FiImage className="toolbar-icon" title="Add Image" />
-//         <FiSmile className="toolbar-icon" title="Add Emoji" />
-//         <FiBarChart2 className="toolbar-icon" title="Poll" />
-//         <FiMapPin className="toolbar-icon" title="Add Location" />
-//         <span
-//           className={`char-counter ${
-//             charLimit - text.length <= 20 ? "warning" : ""
-//           }`}
-//         >
-//           {charLimit - text.length}
-//         </span>
-//       </div>
-
-//       {/* Divider */}
-//       <div className="divider" />
-
-//       {/* Actions */}
-//       <div className="action-buttons">
-//         <button
-//           className="action-btn"
-//           onClick={() => handleAction("Analyze")}
-//           disabled={isLoading}
-//         >
-//           {isLoading && "Loading..."} {!isLoading && "Analyze"}
-//         </button>
-//         <button
-//           className="action-btn"
-//           onClick={() => handleAction("Meme")}
-//           disabled={isLoading}
-//         >
-//           {isLoading && "Loading..."} {!isLoading && "Meme"}
-//         </button>
-//         <button
-//           className="action-btn"
-//           onClick={() => handleAction("Translate")}
-//           disabled={isLoading}
-//         >
-//           {isLoading && "Loading..."} {!isLoading && "Translate"}
-//         </button>
-//         <button
-//           className="action-btn"
-//           onClick={() => handleAction("Summarize")}
-//           disabled={isLoading}
-//         >
-//           {isLoading && "Loading..."} {!isLoading && "Summarize"}
-//         </button>
-//       </div>
-
-//       {/* Thread Section */}
-//       <div className="thread-section">
-//         {thread.map((item, index) => (
-//           <div key={index} className="thread-item">
-//             <div className="thread-action">Response to "{item.action}"</div>
-//             <div className="thread-text">{item.response}</div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default TwitterPlayground;
-
 import React, { useState, useRef, useEffect } from "react";
 import { FiImage, FiSmile, FiMapPin, FiBarChart2 } from "react-icons/fi";
 import { FaHeart, FaRetweet, FaComment, FaShare } from "react-icons/fa";
@@ -157,8 +32,8 @@ const TwitterPlayground = () => {
         {
           action,
           response,
-          username: "John Doe",
-          handle: "@johndoe",
+          username: "TweetVichar",
+          handle: "@tweetvochar",
           timestamp: "Just now",
         },
       ]); // Add response to thread
@@ -179,7 +54,7 @@ const TwitterPlayground = () => {
       case "Summarize":
         return "Summary: You've made your point clear and concise.";
       default:
-        return "Unknown action.";
+        return "xt ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ips";
     }
   };
 
@@ -222,7 +97,13 @@ const TwitterPlayground = () => {
 
       {/* Action Buttons */}
       <div className="action-buttons">
-        {["Analyze", "Meme", "Translate", "Summarize"].map((action) => (
+        {[
+          "How would Elon Musk react to this",
+          "Check facts",
+          "Sentiment Analyzer",
+          "Create a meme",
+          "Simplify this",
+        ].map((action) => (
           <button
             key={action}
             className="action-btn"

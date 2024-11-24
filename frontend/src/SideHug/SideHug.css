@@ -8,6 +8,8 @@
   height: 100vh;
   background-color: black;
   display: flex;
+  flex-flow: column;
+  color: white;
   justify-content: center;
   align-items: center;
 }
@@ -18,7 +20,7 @@
   overflow-y: auto; /* Allow vertical scrolling */
   display: flex;
   justify-content: center;
-  align-items: center; /* Align content to the top */
+  /* align-items: center;  */
 }
 
 .twitter_logo {
@@ -30,4 +32,8 @@
   height: 100vh; /* Full height of the viewport */
   display: flex;
   flex-flow: row;
+}
+
+.left_sidehug > h2 {
+  margin: 50px 0 20px 0;
 }
