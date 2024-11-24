@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'impersonation',
     'meme_creator',
    # 'picture_perfect',
-   # 'sreenshot_research',
+   'screenshot_research',
     'sentiment_analyzer',
     'viral_thread',
     'django.contrib.admin',
