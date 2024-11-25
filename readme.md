@@ -4,7 +4,7 @@ An intelligent bot for Bluesky that processes mentions and provides AI-powered r
 
 ---
 
-#How to use
+# How to use
 
 - mention smartbot.bsky.social on BlueSky to test this out
 
