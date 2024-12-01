@@ -11,6 +11,7 @@ import os
 def generate_meme(request):
     try:
         input_text = request.data.get('input_text')
+        print(input_text)
         if not input_text:
             return Response({'error': 'No input text provided'}, status=400)
 

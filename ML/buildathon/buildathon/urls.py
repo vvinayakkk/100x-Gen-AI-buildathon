@@ -19,7 +19,7 @@ from django.urls import path,include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('api/',include('context_bridge.urls')),
+    path('api/',include('context_bridge.urls')),
     path('api/',include('fact_checker.urls')),
     path('api/',include('impersonation.urls')),
     path('api/',include('meme_creator.urls')),

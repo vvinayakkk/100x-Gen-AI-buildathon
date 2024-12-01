@@ -169,7 +169,7 @@ class EnhancedViralThreadGenerator:
         self.thread_template = PromptTemplate(
             input_variables=["topic", "hook", "perspective"],
             template="""
-            Generate 4 {perspective} tweets continuing from this hook about {topic}:
+            Generate 2 {perspective} tweets continuing from this hook about {topic}:
             "{hook}"
 
             Make the thread:
@@ -184,7 +184,7 @@ class EnhancedViralThreadGenerator:
 
             Maintain the {perspective} perspective while acknowledging potential counterpoints.
             Make it feel authentic and viral-worthy.
-            Format as a list of 4 tweets, separated by newlines.
+            Format as a list of 2 tweets, separated by newlines.
             """
         )
 
@@ -328,14 +328,14 @@ class EnhancedViralThreadGenerator:
                     style_metrics = self.style_analyzer.analyze_style(optimized_tweet)
 
                     optimized_thread.append({
-                        "position": i + 1,
-                        "content": optimized_tweet,
-                        "metrics": {
-                            "basic_metrics": tweet_metrics,
-                            "style_metrics": style_metrics,
-                            "optimal_posting_time": self.style_analyzer.get_optimal_posting_time()
+                        # "position": i + 1,
+                        "content": optimized_tweet
+                        # "metrics": {
+                        #     "basic_metrics": tweet_metrics,
+                        #     "style_metrics": style_metrics,
+                        #     "optimal_posting_time": self.style_analyzer.get_optimal_posting_time()
                         }
-                    })
+                    )
 
             return optimized_thread
 
