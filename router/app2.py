@@ -148,10 +148,19 @@ class IntentRouter:
         
         return route_scores
 
-    def route_instruction(self, user_command, original_tweet=None):
+    def route_instruction(self, user_command, original_tweet=None, media_data=None):
         """
-        Route instruction using hybrid approach with tweet context
+        Enhanced routing with media and context awareness
+        
+        :param user_command: User's instruction
+        :param original_tweet: Original tweet context
+        :param media_data: Base64 encoded image data
+        :return: Tuple of (route_name, confidence)
         """
+        # Prioritize screenshot research if media is present
+        if media_data:
+            return 'screenshot_research', 0.95
+        
         # Prepare context-aware classification
         context = original_tweet or ""
         
@@ -169,6 +178,11 @@ class IntentRouter:
         
         # Fallback to TF-IDF similarity
         route_scores = self.get_route_similarity(user_command)
+        
+        # Special handling for generic questions with non-specific tweet context
+        if not context.strip() and any(keyword in user_command.lower() for keyword in ['what', 'who', 'where', 'when', 'why', 'how']):
+            route_scores['tweet_helper'] *= 1.5
+        
         best_route = max(route_scores.items(), key=lambda x: x[1])
         
         return best_route[0], best_route[1]
@@ -193,12 +207,14 @@ def process_mention():
     
     user_command = data['userCommand']
     original_tweet = data['originalTweet']
-    
-    # Optional: handle media if present
     media_data = data.get('mediaData')
     
-    # Route the instruction
-    route_name, confidence = router.route_instruction(user_command, original_tweet)
+    # Route the instruction with media awareness
+    route_name, confidence = router.route_instruction(
+        user_command, 
+        original_tweet, 
+        media_data
+    )
     
     # Prepare response matching previous router's structure
     response = {
