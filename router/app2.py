@@ -242,5 +242,5 @@ def initialize_router(api_key):
 
 if __name__ == '__main__':
     # Example initialization (replace with your actual API key)
-    initialize_router('AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE')
+    initialize_router('')
     app.run(debug=True, port=5000)
