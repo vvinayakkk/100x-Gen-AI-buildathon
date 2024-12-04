@@ -368,4 +368,4 @@ if __name__ == '__main__':
     start_analysis_thread()
     
     # Run the Flask app
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=6000)
