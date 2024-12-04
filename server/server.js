@@ -10,7 +10,6 @@ const agent = new AtpAgent({
 });
 
 const MAX_IMAGE_SIZE = 10000000;
-
 const loginToBluesky = async () => {
   try {
     await agent.login({

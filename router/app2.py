@@ -9,7 +9,7 @@ import os
 
 # Langchain imports
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
+from langchain.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain.chains import LLMChain
 
 app = Flask(__name__)
@@ -28,7 +28,7 @@ CATEGORIES = {
     'tweet_helper': '/api/process-tweet/'
 }
 
-# Enhanced Route Patterns (same as before)
+# Route Patterns (keep these for similarity backup)
 ROUTE_PATTERNS = {
     'screenshot_research': [
         'analyze', 'research', 'context', 'insight', 'screenshot', 
@@ -76,7 +76,7 @@ ROUTE_PATTERNS = {
 class IntentRouter:
     def __init__(self, api_key):
         """
-        Initialize the Intent Router with Gemini integration
+        Initialize the Intent Router with Gemini integration and Few-Shot Prompt
         
         :param api_key: Google Gemini API Key
         """
@@ -87,26 +87,205 @@ class IntentRouter:
             temperature=0.2  # Low temperature for more deterministic responses
         )
         
-        # Create prompt template for route classification
-        self.prompt_template = PromptTemplate(
-            input_variables=["instruction", "tweet"],
-            template="""
-            You are an expert intent classifier. Given the following user instruction 
-            and original tweet context, classify it into one of these routes: 
-            1. screenshot_research
-            2. persona_simulation
-            3. thread_generation
-            4. fact_checking
-            5. sentiment_analysis
-            6. meme_generation
-            7. tweet_helper
+        # Create few-shot examples with comprehensive route patterns
+        self.few_shot_examples = [
+    # Screenshot Research Examples
+    {
+        "instruction": "analyze this",
+        "tweet": "Breaking news chart about global tech investments",
+        "route": "screenshot_research"
+    },
+    {
+        "instruction": "explain this screenshot",
+        "tweet": "Infographic showing climate change statistics",
+        "route": "screenshot_research"
+    },
+    {
+        "instruction": "what's in this image",
+        "tweet": "Complex data visualization about economic trends",
+        "route": "screenshot_research"
+    },
+    {
+        "instruction": "break down this",
+        "tweet": "Scientific research summary graphic",
+        "route": "screenshot_research"
+    },
 
+    # Persona Simulation Examples
+    {
+        "instruction": "write like Elon Musk",
+        "tweet": "Discussion about space exploration and technology",
+        "route": "persona_simulation"
+    },
+    {
+        "instruction": "respond as Steve Jobs",
+        "tweet": "Conversation about product innovation",
+        "route": "persona_simulation"
+    },
+    {
+        "instruction": "talk like a comedian",
+        "tweet": "Current events and social trends",
+        "route": "persona_simulation"
+    },
+    {
+        "instruction": "speak as a politician",
+        "tweet": "Debate about social policy",
+        "route": "persona_simulation"
+    },
+
+    # Thread Generation Examples
+    {
+        "instruction": "explain in a thread",
+        "tweet": "Complex scientific breakthrough",
+        "route": "thread_generation"
+    },
+    {
+        "instruction": "break this down",
+        "tweet": "Recent technological innovation",
+        "route": "thread_generation"
+    },
+    {
+        "instruction": "deep dive into this",
+        "tweet": "Emerging social trend",
+        "route": "thread_generation"
+    },
+    {
+        "instruction": "elaborate on this",
+        "tweet": "Political or economic development",
+        "route": "thread_generation"
+    },
+
+    # Fact Checking Examples
+    {
+        "instruction": "is this true",
+        "tweet": "Controversial scientific claim",
+        "route": "fact_checking"
+    },
+    {
+        "instruction": "verify this",
+        "tweet": "Political statement about economic policy",
+        "route": "fact_checking"
+    },
+    {
+        "instruction": "check the facts",
+        "tweet": "Viral health information",
+        "route": "fact_checking"
+    },
+    {
+        "instruction": "true or false",
+        "tweet": "Historical or current event claim",
+        "route": "fact_checking"
+    },
+
+    # Sentiment Analysis Examples
+    {
+        "instruction": "what's the mood",
+        "tweet": "Controversial social media post",
+        "route": "sentiment_analysis"
+    },
+    {
+        "instruction": "analyze emotion",
+        "tweet": "Heated political discussion",
+        "route": "sentiment_analysis"
+    },
+    {
+        "instruction": "emotional breakdown",
+        "tweet": "Viral personal story",
+        "route": "sentiment_analysis"
+    },
+    {
+        "instruction": "tone check",
+        "tweet": "Provocative news headline",
+        "route": "sentiment_analysis"
+    },
+
+    # Meme Generation Examples
+    {
+        "instruction": "make this funny",
+        "tweet": "Awkward tech industry moment",
+        "route": "meme_generation"
+    },
+    {
+        "instruction": "create something trendy",
+        "tweet": "Latest viral internet challenge",
+        "route": "meme_generation"
+    },
+    {
+        "instruction": "meme this",
+        "tweet": "Ridiculous current event",
+        "route": "meme_generation"
+    },
+    {
+        "instruction": "turn this into a meme",
+        "tweet": "Absurd social media trend",
+        "route": "meme_generation"
+    },
+
+    # Tweet Helper Examples
+    {
+        "instruction": "can you help",
+        "tweet": "Vague request for assistance",
+        "route": "tweet_helper"
+    },
+    {
+        "instruction": "do something",
+        "tweet": "Generic task request",
+        "route": "tweet_helper"
+    },
+    {
+        "instruction": "i need help",
+        "tweet": "Unclear or miscellaneous request",
+        "route": "tweet_helper"
+    },
+    {
+        "instruction": "assist me",
+        "tweet": "General support needed",
+        "route": "tweet_helper"
+    }
+]
+        
+        # Create example template
+        self.example_template = PromptTemplate(
+            input_variables=["instruction", "tweet", "route"],
+            template="User Instruction: {instruction}\nOriginal Tweet: {tweet}\nRoute: {route}"
+        )
+        
+        # Create few-shot prompt template
+        self.prompt_template = FewShotPromptTemplate(
+            examples=self.few_shot_examples,
+            example_prompt=self.example_template,
+            prefix="""
+            You are an expert intent classifier. Given a user instruction and 
+            optional tweet context, classify the intent into one of these routes:
+            
+            1. screenshot_research: Analyzing images, screenshots, providing context
+               Keywords: analyze, research, screenshot, understand, breakdown, examine
+            
+            2. persona_simulation: Writing or responding in a specific person's style
+               Keywords: write like, respond as, mimic, impersonate, style of
+            
+            3. thread_generation: Creating detailed, long-form explanations
+               Keywords: create thread, detailed explanation, comprehensive breakdown
+            
+            4. fact_checking: Verifying claims, checking accuracy
+               Keywords: fact check, verify, true or false, validate, source
+            
+            5. sentiment_analysis: Analyzing emotional tone or mood
+               Keywords: sentiment, emotion, mood, emotional analysis, tone
+            
+            6. meme_generation: Creating humorous images or responses
+               Keywords: meme, funny image, generate meme, humorous response
+            
+            7. tweet_helper: General assistance or undefined requests
+               Keywords: help, assist, general task, support
+            """,
+            suffix="""
             User Instruction: {instruction}
             Original Tweet: {tweet}
-
-            Provide your response as the EXACT route name. 
-            Be precise and consider the primary intent of the instruction.
-            """)
+            
+            Route:""",
+            input_variables=["instruction", "tweet"]
+        )
         
         # Create LLM chain
         self.route_chain = LLMChain(llm=self.llm, prompt=self.prompt_template)
@@ -187,6 +366,8 @@ class IntentRouter:
         
         return best_route[0], best_route[1]
 
+
+
 # Global router instance (you'll need to provide your Google API key)
 router = None
 
@@ -242,5 +423,5 @@ def initialize_router(api_key):
 
 if __name__ == '__main__':
     # Example initialization (replace with your actual API key)
-    initialize_router('')
+    initialize_router('AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE')
     app.run(debug=True, port=5000)
