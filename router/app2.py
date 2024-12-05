@@ -6,6 +6,7 @@ import re
 import spacy
 import base64
 import os
+import requests
 
 # Langchain imports
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -86,6 +87,8 @@ class IntentRouter:
             google_api_key=api_key,
             temperature=0.2  # Low temperature for more deterministic responses
         )
+
+        self.django_base_url = 'https://be5e-103-44-107-87.ngrok-free.app'
         
         # Create few-shot examples with comprehensive route patterns
         self.few_shot_examples = [
@@ -327,6 +330,63 @@ class IntentRouter:
         
         return route_scores
 
+    def forward_to_django(self, category, data):
+        """
+        Forward the request to the appropriate Django endpoint
+        
+        :param category: Classified category
+        :param data: Request payload
+        :return: Response from Django API
+        """
+        endpoint = CATEGORIES.get(category, '/api/process-tweet/')
+        url = f"{self.django_base_url}{endpoint}"
+        
+        # Prepare payload similar to the Node.js middleware
+        payload = {
+            'original_tweet': data.get('originalTweet', ''),
+            'user_command': data.get('userCommand', ''),
+            'metadata': {
+                'processed_at': None,  # You can add a timestamp if needed
+                'category': category
+            }
+        }
+        
+        # Special case handling for different categories
+        if category == 'screenshot_research' and data.get('mediaData'):
+            # For screenshot research, include media data
+            payload['image'] = data['mediaData']
+        
+        elif category == 'persona_simulation':
+            payload['original_tweet'] = data.get('originalTweet', '')
+            payload['user_command'] = data.get('userCommand', '')
+        
+        elif category == 'meme_generation':
+            payload['input_text'] = data.get('originalTweet', '')
+        
+        elif category == 'fact_checking':
+            payload['claim'] = data.get('originalTweet', '')
+        
+        elif category == 'thread_generation':
+            payload['topic'] = data.get('originalTweet', '')
+        
+        elif category == 'sentiment_analysis':
+            payload['tweet_text'] = data.get('originalTweet', '')
+
+        elif category == 'tweet_helper':
+            payload['tweet'] = data.get('originalTweet', '')
+            payload['instructions'] = data.get('userCommand', '')
+        
+        try:
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # Raise an exception for bad responses
+            return response.json()
+        except requests.RequestException as e:
+            print(f"Error forwarding to Django: {e}")
+            return {
+                'error': 'Could not forward request to backend',
+                'details': str(e)
+            }
+
     def route_instruction(self, user_command, original_tweet=None, media_data=None):
         """
         Enhanced routing with media and context awareness
@@ -351,7 +411,17 @@ class IntentRouter:
             ).strip().lower()
             
             if llm_route in ROUTE_PATTERNS:
-                return llm_route, 0.9  # High confidence in LLM route
+                # Prepare data for Django forwarding
+                data = {
+                    'userCommand': user_command,
+                    'originalTweet': original_tweet or '',
+                    'mediaData': media_data
+                }
+                
+                # Forward to Django
+                django_response = self.forward_to_django(llm_route, data)
+                
+                return llm_route, 0.9, django_response
         except Exception as e:
             print(f"LLM Classification Error: {e}")
         
@@ -364,9 +434,17 @@ class IntentRouter:
         
         best_route = max(route_scores.items(), key=lambda x: x[1])
         
-        return best_route[0], best_route[1]
-
-
+        # Prepare data for Django forwarding
+        data = {
+            'userCommand': user_command,
+            'originalTweet': original_tweet or '',
+            'mediaData': media_data
+        }
+        
+        # Forward to Django
+        django_response = self.forward_to_django(best_route[0], data)
+        
+        return best_route[0], best_route[1], django_response
 
 # Global router instance (you'll need to provide your Google API key)
 router = None
@@ -391,7 +469,7 @@ def process_mention():
     media_data = data.get('mediaData')
     
     # Route the instruction with media awareness
-    route_name, confidence = router.route_instruction(
+    route_name, confidence, django_response  = router.route_instruction(
         user_command, 
         original_tweet, 
         media_data
@@ -403,6 +481,7 @@ def process_mention():
         'category': route_name,
         'endpoint': CATEGORIES.get(route_name, '/api/process-tweet/'),
         'confidence': float(confidence),
+        'result': django_response,
         'metadata': {
             'processed_at': None,  # You can add timestamp if needed
             'original_command': user_command,
@@ -423,5 +502,5 @@ def initialize_router(api_key):
 
 if __name__ == '__main__':
     # Example initialization (replace with your actual API key)
-    initialize_router('AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE')
+    initialize_router('')
     app.run(debug=True, port=5000)
