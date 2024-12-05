@@ -16,7 +16,27 @@ import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
+from flask import Flask, jsonify
+from flask_cors import CORS
+# ... other imports ...
+app = Flask(__name__)
 
+# Configure CORS properly
+CORS(app, resources={
+    r"/analyze/*": {
+        "origins": ["http://localhost:5173"],  # Your frontend origin
+        "methods": ["GET", "OPTIONS"],  # Allowed methods
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 # Download resources
 nltk.download('vader_lexicon', quiet=True)
 
@@ -311,8 +331,17 @@ def run_periodic_analysis(financial_analyzer, trend_crypto_analyzer):
 app = Flask(__name__)
 financial_analyzer = FinancialAnalyzer()
 trend_crypto_analyzer = TrendCryptoAnalyzer()
-
 # Existing Financial Analysis Routes
+
+@app.after_request
+def after_request(response):
+    # Allow specific origin instead of *
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
+
 @app.route('/analyze/stocks')
 def get_stock_analysis():
     with open(os.path.join('analysis_results', 'stocks_analysis.json'), 'r') as f:
@@ -368,4 +397,4 @@ if __name__ == '__main__':
     start_analysis_thread()
     
     # Run the Flask app
-    app.run(debug=True, port=6000)
+    app.run(debug=True, port=5000)
