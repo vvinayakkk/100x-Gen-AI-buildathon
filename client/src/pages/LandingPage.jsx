@@ -2,13 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnalysisService } from '../services/api-service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  AlertTriangle, TrendingUp, Star, BarChart, Activity, 
-  ChevronDown, TrendingUp as TrendIcon, 
-  AlertOctagon, 
-  Target, 
-  BarChartHorizontal 
-} from 'lucide-react';
+import { AlertTriangle, TrendingUp, Star, BarChart, Activity, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -17,71 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  BarChart as RechartsBarChart, 
-  Bar,
-  ScatterChart,
-  Scatter,
-  ZAxis
-} from 'recharts';
+import { LineChart, Line, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, ZAxis } from 'recharts';
 
-
-const TrendPointCard = ({ points, category }) => {
-  const pointConfigurations = {
-    stocks: [
-      { title: 'Key Market Trends', icon: TrendIcon },
-      { title: 'Potential Investment Opportunities', icon: Target },
-      { title: 'Risk Assessment', icon: AlertOctagon },
-      { title: 'Sentiment Summary', icon: BarChartHorizontal }
-    ],
-    financial_news: [
-      { title: 'Key Market Trends', icon: TrendIcon },
-      { title: 'Potential Investment Opportunities', icon: Target },
-      { title: 'Risk Assessment', icon: AlertOctagon },
-      { title: 'Sentiment Summary', icon: BarChartHorizontal }
-    ],
-    crypto: [
-      { title: 'Key Emerging Trends', icon: TrendIcon },
-      { title: 'Most Discussed Subtopics', icon: BarChartHorizontal },
-      { title: 'Potential Future Directions', icon: Target },
-      { title: 'Sentiment and Engagement Summary', icon: AlertOctagon }
-    ]
-  };
-
-  return (
-    <div className="grid grid-cols-2 gap-4">
-      {pointConfigurations[category]?.map((config, index) => {
-        const Icon = config.icon;
-        const point = points?.[config.title.toLowerCase().replace(/\s+/g, '_')] || 'No data available';
-        
-        return (
-          <motion.div
-            key={config.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-lg hover:bg-gray-700/50 transition-all group"
-          >
-            <div className="flex items-center mb-3">
-              <Icon className="w-6 h-6 mr-3 text-blue-400 group-hover:text-blue-300 transition-colors" />
-              <h3 className="text-sm font-semibold text-blue-300 group-hover:text-blue-200">
-                {config.title}
-              </h3>
-            </div>
-            <p className="text-xs text-gray-300 line-clamp-3">{point}</p>
-          </motion.div>
-        );
-      })}
-    </div>
-  );
-};
 
 // Loading overlay component
 const LoadingOverlay = () => (
@@ -411,33 +342,24 @@ const HomePage = () => {
           </div>
         </>
       );
-      
-  // Check if ai_insights exists and is not empty
-  case 'insights':
-    return (
-      <div className="space-y-4">
-        {!analysisData?.ai_insights ? (
-          <div className="text-gray-400 text-sm flex items-center justify-center h-full">
-            No insights available for this category
-          </div>
-        ) : (
+      case 'insights':
+        return (
           <div className="prose prose-sm prose-invert">
-            {analysisData.ai_insights.split('\n\n').map((paragraph, index) => (
-              <motion.p
-                key={index}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: index * 0.1 }}
-                className="text-sm text-gray-300 mb-3"
-              >
-                {paragraph}
-              </motion.p>
+            {analysisData?.ai_insights?.split('*').map((insight, index) => (
+              insight.trim() && (
+                <motion.p
+                  key={index}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="text-sm text-gray-300 mb-2"
+                >
+                  • {insight.trim()}
+                </motion.p>
+              )
             ))}
           </div>
-        )}
-      </div>
-    );
-
+        );
       default:
         return null;
     }
@@ -449,7 +371,7 @@ const HomePage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="container mx-auto space-y-8"
+        className="container mx-auto"
       >
         <div className="flex justify-center mb-8 gap-2 flex-wrap">
           {mainCategories.map(({ id, icon, label }) => (
@@ -466,7 +388,7 @@ const HomePage = () => {
               {label}
             </Button>
           ))}
-  
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -494,32 +416,17 @@ const HomePage = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-  
+
         {error && (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-  
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-2xl"
-          >
-            <h2 className="text-2xl font-bold mb-6 text-blue-300">
-              Trend Analysis Overview
-            </h2>
-            <TrendPointCard 
-              points={analysisData?.trend_points} 
-              category={activeCategory === 'news' ? 'financial_news' : activeCategory} 
-            />
-          </motion.div>
-          
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <AnimatePresence mode="wait">
-            {['sentiment', 'clusters'].map((section, index) => (
+            {['sentiment', 'insights', 'clusters'].map((section, index) => (
               <motion.div
                 key={`${section}-${activeCategory}`}
                 initial={{ opacity: 0, y: 20 }}
@@ -532,6 +439,7 @@ const HomePage = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center text-blue-400">
                       {section === 'sentiment' && <TrendingUp className="mr-2" />}
+                      {section === 'insights' && <Star className="mr-2" />}
                       {section === 'clusters' && <BarChart className="mr-2" />}
                       {section.charAt(0).toUpperCase() + section.slice(1)} Analysis
                     </CardTitle>
