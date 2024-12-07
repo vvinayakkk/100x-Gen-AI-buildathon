@@ -35,7 +35,7 @@ class BlueSkyBot:
             )
             logger.info(f'Logged in as: {os.getenv("BLUESKY_HANDLE")}')
         except Exception as e:
-            logger.error(f'Login failed: {e}')
+            logger.error(f'Login failed: {e}', exc_info=True)
             raise
 
     @staticmethod
@@ -69,7 +69,7 @@ class BlueSkyBot:
                 return image_data
 
         except Exception as e:
-            logger.error(f'Image processing error: {e}')
+            logger.error(f'Image processing error: {e}', exc_info=True)
             return None
 
     async def process_middleware_response(self, mention, root_post=None):
@@ -94,7 +94,7 @@ class BlueSkyBot:
             return await self.handle_response_category(response_data, mention, root_post)
 
         except Exception as e:
-            logger.error(f'Middleware processing error: {e}')
+            logger.error(f'Middleware processing error: {e}', exc_info=True)
             return False
 
     async def handle_response_category(self, response_data, mention, root_post):
@@ -165,7 +165,7 @@ class BlueSkyBot:
             return False
 
         except Exception as e:
-            logger.error(f'Error handling response: {e}')
+            logger.error(f'Error handling response: {e}', exc_info=True)
             return False
 
     async def reply_to_mention(self, mention, root_post, reply_text, image_embed=None):
@@ -185,7 +185,7 @@ class BlueSkyBot:
             logger.info('Successfully replied to mention')
 
         except Exception as e:
-            logger.error(f'Reply error: {e}')
+            logger.error(f'Reply error: {e}', exc_info=True)
 
     async def get_root_post(self, uri):
         """Retrieve the root post for a given URI"""
@@ -195,7 +195,7 @@ class BlueSkyBot:
 
             return post
         except Exception as e:
-            logger.error(f'Error getting root post: {e}')
+            logger.error(f'Error getting root post: {e}', exc_info=True)
             return None
 
     async def check_mentions(self):
@@ -232,7 +232,7 @@ class BlueSkyBot:
                     logger.error("Failed to mark as read!")
 
         except Exception as e:
-            logger.error(f'Check mentions error: {e}')
+            logger.error(f'Check mentions error: {e}', exc_info=True)
             # Attempt re-login if authentication error
             if 'auth' in str(e).lower():
                 await self.login()
@@ -252,7 +252,7 @@ async def main():
     try:
         await bot.run_bot()
     except Exception as e:
-        logger.error(f'Bot crashed: {e}')
+        logger.error(f'Bot crashed: {e}', exc_info=True)
         # Optional: Add restart logic or notification mechanism
 
 
