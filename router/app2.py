@@ -1,18 +1,19 @@
-from flask import Flask, request, jsonify
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
-import re
-import spacy
-import base64
 import os
-import requests
+import re
 
+import numpy as np
+import requests
+import spacy
+from flask import Flask, request, jsonify
+from langchain.chains import LLMChain
+from langchain.prompts import FewShotPromptTemplate, PromptTemplate
 # Langchain imports
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import FewShotPromptTemplate, PromptTemplate
-from langchain.chains import LLMChain
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import dotenv
 
+dotenv.load_dotenv()
 app = Flask(__name__)
 
 # Load English language model for NLP
@@ -32,22 +33,22 @@ CATEGORIES = {
 # Route Patterns (keep these for similarity backup)
 ROUTE_PATTERNS = {
     'screenshot_research': [
-        'analyze', 'research', 'context', 'insight', 'screenshot', 
+        'analyze', 'research', 'context', 'insight', 'screenshot',
         'understand', 'breakdown', 'examine', 'investigate',
-        'what does this mean', 'explain this', 'what is this about', 
+        'what does this mean', 'explain this', 'what is this about',
         'help me understand', 'provide details', 'give context',
     ],
     'persona_simulation': [
         'write like', 'respond as', 'pretend to be', 'imitate',
         'simulate', 'personality', 'style of', 'voice of',
-        'mimic', 'impersonate', 'channel', 'embody', 
+        'mimic', 'impersonate', 'channel', 'embody',
         'sound like', 'speak as', 'communicate like',
     ],
     'thread_generation': [
         'create thread', 'make thread', 'thread about',
         'breakdown', 'explain in thread', 'write thread',
         'twitter thread', 'long-form explanation',
-        'detailed explanation', 'comprehensive breakdown', 
+        'detailed explanation', 'comprehensive breakdown',
         'step-by-step', 'in-depth analysis', 'elaborate on',
     ],
     'fact_checking': [
@@ -58,13 +59,13 @@ ROUTE_PATTERNS = {
     'sentiment_analysis': [
         'sentiment', 'emotion', 'feeling', 'mood',
         'emotional analysis', 'tone', 'attitude', 'emotional state',
-        'emotional context', 'psychological insight', 
-        'emotional breakdown', 'mood assessment', 
+        'emotional context', 'psychological insight',
+        'emotional breakdown', 'mood assessment',
     ],
     'meme_generation': [
         'meme', 'funny image', 'make meme', 'generate meme',
         'reply with meme', 'meme response', 'internet humor',
-        'viral meme', 'trending meme', 'comedy image', 
+        'viral meme', 'trending meme', 'comedy image',
         'humorous response', 'witty comeback', 'joke image',
     ],
     'tweet_helper': [
@@ -73,6 +74,7 @@ ROUTE_PATTERNS = {
         'can you', 'please help', 'i need', 'support',
     ]
 }
+
 
 class IntentRouter:
     def __init__(self, api_key):
@@ -83,176 +85,176 @@ class IntentRouter:
         """
         # Initialize Gemini LLM
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-pro", 
+            model="gemini-pro",
             google_api_key=api_key,
             temperature=0.2  # Low temperature for more deterministic responses
         )
 
-        self.django_base_url = 'https://be5e-103-44-107-87.ngrok-free.app'
-        
+        self.django_base_url = 'http://127.0.0.1:8000'
+
         # Create few-shot examples with comprehensive route patterns
         self.few_shot_examples = [
-    # Screenshot Research Examples
-    {
-        "instruction": "analyze this",
-        "tweet": "Breaking news chart about global tech investments",
-        "route": "screenshot_research"
-    },
-    {
-        "instruction": "explain this screenshot",
-        "tweet": "Infographic showing climate change statistics",
-        "route": "screenshot_research"
-    },
-    {
-        "instruction": "what's in this image",
-        "tweet": "Complex data visualization about economic trends",
-        "route": "screenshot_research"
-    },
-    {
-        "instruction": "break down this",
-        "tweet": "Scientific research summary graphic",
-        "route": "screenshot_research"
-    },
+            # Screenshot Research Examples
+            {
+                "instruction": "analyze this",
+                "tweet": "Breaking news chart about global tech investments",
+                "route": "screenshot_research"
+            },
+            {
+                "instruction": "explain this screenshot",
+                "tweet": "Infographic showing climate change statistics",
+                "route": "screenshot_research"
+            },
+            {
+                "instruction": "what's in this image",
+                "tweet": "Complex data visualization about economic trends",
+                "route": "screenshot_research"
+            },
+            {
+                "instruction": "break down this",
+                "tweet": "Scientific research summary graphic",
+                "route": "screenshot_research"
+            },
 
-    # Persona Simulation Examples
-    {
-        "instruction": "write like Elon Musk",
-        "tweet": "Discussion about space exploration and technology",
-        "route": "persona_simulation"
-    },
-    {
-        "instruction": "respond as Steve Jobs",
-        "tweet": "Conversation about product innovation",
-        "route": "persona_simulation"
-    },
-    {
-        "instruction": "talk like a comedian",
-        "tweet": "Current events and social trends",
-        "route": "persona_simulation"
-    },
-    {
-        "instruction": "speak as a politician",
-        "tweet": "Debate about social policy",
-        "route": "persona_simulation"
-    },
+            # Persona Simulation Examples
+            {
+                "instruction": "write like Elon Musk",
+                "tweet": "Discussion about space exploration and technology",
+                "route": "persona_simulation"
+            },
+            {
+                "instruction": "respond as Steve Jobs",
+                "tweet": "Conversation about product innovation",
+                "route": "persona_simulation"
+            },
+            {
+                "instruction": "talk like a comedian",
+                "tweet": "Current events and social trends",
+                "route": "persona_simulation"
+            },
+            {
+                "instruction": "speak as a politician",
+                "tweet": "Debate about social policy",
+                "route": "persona_simulation"
+            },
 
-    # Thread Generation Examples
-    {
-        "instruction": "explain in a thread",
-        "tweet": "Complex scientific breakthrough",
-        "route": "thread_generation"
-    },
-    {
-        "instruction": "break this down",
-        "tweet": "Recent technological innovation",
-        "route": "thread_generation"
-    },
-    {
-        "instruction": "deep dive into this",
-        "tweet": "Emerging social trend",
-        "route": "thread_generation"
-    },
-    {
-        "instruction": "elaborate on this",
-        "tweet": "Political or economic development",
-        "route": "thread_generation"
-    },
+            # Thread Generation Examples
+            {
+                "instruction": "explain in a thread",
+                "tweet": "Complex scientific breakthrough",
+                "route": "thread_generation"
+            },
+            {
+                "instruction": "break this down",
+                "tweet": "Recent technological innovation",
+                "route": "thread_generation"
+            },
+            {
+                "instruction": "deep dive into this",
+                "tweet": "Emerging social trend",
+                "route": "thread_generation"
+            },
+            {
+                "instruction": "elaborate on this",
+                "tweet": "Political or economic development",
+                "route": "thread_generation"
+            },
 
-    # Fact Checking Examples
-    {
-        "instruction": "is this true",
-        "tweet": "Controversial scientific claim",
-        "route": "fact_checking"
-    },
-    {
-        "instruction": "verify this",
-        "tweet": "Political statement about economic policy",
-        "route": "fact_checking"
-    },
-    {
-        "instruction": "check the facts",
-        "tweet": "Viral health information",
-        "route": "fact_checking"
-    },
-    {
-        "instruction": "true or false",
-        "tweet": "Historical or current event claim",
-        "route": "fact_checking"
-    },
+            # Fact Checking Examples
+            {
+                "instruction": "is this true",
+                "tweet": "Controversial scientific claim",
+                "route": "fact_checking"
+            },
+            {
+                "instruction": "verify this",
+                "tweet": "Political statement about economic policy",
+                "route": "fact_checking"
+            },
+            {
+                "instruction": "check the facts",
+                "tweet": "Viral health information",
+                "route": "fact_checking"
+            },
+            {
+                "instruction": "true or false",
+                "tweet": "Historical or current event claim",
+                "route": "fact_checking"
+            },
 
-    # Sentiment Analysis Examples
-    {
-        "instruction": "what's the mood",
-        "tweet": "Controversial social media post",
-        "route": "sentiment_analysis"
-    },
-    {
-        "instruction": "analyze emotion",
-        "tweet": "Heated political discussion",
-        "route": "sentiment_analysis"
-    },
-    {
-        "instruction": "emotional breakdown",
-        "tweet": "Viral personal story",
-        "route": "sentiment_analysis"
-    },
-    {
-        "instruction": "tone check",
-        "tweet": "Provocative news headline",
-        "route": "sentiment_analysis"
-    },
+            # Sentiment Analysis Examples
+            {
+                "instruction": "what's the mood",
+                "tweet": "Controversial social media post",
+                "route": "sentiment_analysis"
+            },
+            {
+                "instruction": "analyze emotion",
+                "tweet": "Heated political discussion",
+                "route": "sentiment_analysis"
+            },
+            {
+                "instruction": "emotional breakdown",
+                "tweet": "Viral personal story",
+                "route": "sentiment_analysis"
+            },
+            {
+                "instruction": "tone check",
+                "tweet": "Provocative news headline",
+                "route": "sentiment_analysis"
+            },
 
-    # Meme Generation Examples
-    {
-        "instruction": "make this funny",
-        "tweet": "Awkward tech industry moment",
-        "route": "meme_generation"
-    },
-    {
-        "instruction": "create something trendy",
-        "tweet": "Latest viral internet challenge",
-        "route": "meme_generation"
-    },
-    {
-        "instruction": "meme this",
-        "tweet": "Ridiculous current event",
-        "route": "meme_generation"
-    },
-    {
-        "instruction": "turn this into a meme",
-        "tweet": "Absurd social media trend",
-        "route": "meme_generation"
-    },
+            # Meme Generation Examples
+            {
+                "instruction": "make this funny",
+                "tweet": "Awkward tech industry moment",
+                "route": "meme_generation"
+            },
+            {
+                "instruction": "create something trendy",
+                "tweet": "Latest viral internet challenge",
+                "route": "meme_generation"
+            },
+            {
+                "instruction": "meme this",
+                "tweet": "Ridiculous current event",
+                "route": "meme_generation"
+            },
+            {
+                "instruction": "turn this into a meme",
+                "tweet": "Absurd social media trend",
+                "route": "meme_generation"
+            },
 
-    # Tweet Helper Examples
-    {
-        "instruction": "can you help",
-        "tweet": "Vague request for assistance",
-        "route": "tweet_helper"
-    },
-    {
-        "instruction": "do something",
-        "tweet": "Generic task request",
-        "route": "tweet_helper"
-    },
-    {
-        "instruction": "i need help",
-        "tweet": "Unclear or miscellaneous request",
-        "route": "tweet_helper"
-    },
-    {
-        "instruction": "assist me",
-        "tweet": "General support needed",
-        "route": "tweet_helper"
-    }
-]
-        
+            # Tweet Helper Examples
+            {
+                "instruction": "can you help",
+                "tweet": "Vague request for assistance",
+                "route": "tweet_helper"
+            },
+            {
+                "instruction": "do something",
+                "tweet": "Generic task request",
+                "route": "tweet_helper"
+            },
+            {
+                "instruction": "i need help",
+                "tweet": "Unclear or miscellaneous request",
+                "route": "tweet_helper"
+            },
+            {
+                "instruction": "assist me",
+                "tweet": "General support needed",
+                "route": "tweet_helper"
+            }
+        ]
+
         # Create example template
         self.example_template = PromptTemplate(
             input_variables=["instruction", "tweet", "route"],
             template="User Instruction: {instruction}\nOriginal Tweet: {tweet}\nRoute: {route}"
         )
-        
+
         # Create few-shot prompt template
         self.prompt_template = FewShotPromptTemplate(
             examples=self.few_shot_examples,
@@ -289,7 +291,7 @@ class IntentRouter:
             Route:""",
             input_variables=["instruction", "tweet"]
         )
-        
+
         # Create LLM chain
         self.route_chain = LLMChain(llm=self.llm, prompt=self.prompt_template)
 
@@ -305,29 +307,29 @@ class IntentRouter:
     def get_route_similarity(self, user_input):
         """Enhanced similarity calculation with multiple techniques"""
         preprocessed_input = self.preprocess_text(user_input)
-        
+
         vectorizer = TfidfVectorizer(stop_words='english')
-        
+
         all_patterns = []
         for patterns in ROUTE_PATTERNS.values():
             all_patterns.extend(patterns)
         all_patterns.append(preprocessed_input)
-        
+
         tfidf_matrix = vectorizer.fit_transform(all_patterns)
-        
+
         route_scores = {}
         current_idx = 0
         input_vector = tfidf_matrix[-1]
-        
+
         for route, patterns in ROUTE_PATTERNS.items():
             pattern_vectors = tfidf_matrix[current_idx:current_idx + len(patterns)]
             similarities = cosine_similarity(input_vector, pattern_vectors)
-            
+
             max_similarity = np.max(similarities)
             route_scores[route] = max_similarity ** 1.5
-            
+
             current_idx += len(patterns)
-        
+
         return route_scores
 
     def forward_to_django(self, category, data):
@@ -340,7 +342,7 @@ class IntentRouter:
         """
         endpoint = CATEGORIES.get(category, '/api/process-tweet/')
         url = f"{self.django_base_url}{endpoint}"
-        
+
         # Prepare payload similar to the Node.js middleware
         payload = {
             'original_tweet': data.get('originalTweet', ''),
@@ -350,32 +352,32 @@ class IntentRouter:
                 'category': category
             }
         }
-        
+
         # Special case handling for different categories
         if category == 'screenshot_research' and data.get('mediaData'):
             # For screenshot research, include media data
             payload['image'] = data['mediaData']
-        
+
         elif category == 'persona_simulation':
             payload['original_tweet'] = data.get('originalTweet', '')
             payload['user_command'] = data.get('userCommand', '')
-        
+
         elif category == 'meme_generation':
             payload['input_text'] = data.get('originalTweet', '')
-        
+
         elif category == 'fact_checking':
             payload['claim'] = data.get('originalTweet', '')
-        
+
         elif category == 'thread_generation':
             payload['topic'] = data.get('originalTweet', '')
-        
+
         elif category == 'sentiment_analysis':
             payload['tweet_text'] = data.get('originalTweet', '')
 
         elif category == 'tweet_helper':
             payload['tweet'] = data.get('originalTweet', '')
             payload['instructions'] = data.get('userCommand', '')
-        
+
         try:
             response = requests.post(url, json=payload)
             response.raise_for_status()  # Raise an exception for bad responses
@@ -399,17 +401,17 @@ class IntentRouter:
         # Prioritize screenshot research if media is present
         if media_data:
             return 'screenshot_research', 0.95
-        
+
         # Prepare context-aware classification
         context = original_tweet or ""
-        
+
         # First, try Gemini LLM classification
         try:
             llm_route = self.route_chain.run(
-                instruction=user_command, 
+                instruction=user_command,
                 tweet=context
             ).strip().lower()
-            
+
             if llm_route in ROUTE_PATTERNS:
                 # Prepare data for Django forwarding
                 data = {
@@ -417,64 +419,67 @@ class IntentRouter:
                     'originalTweet': original_tweet or '',
                     'mediaData': media_data
                 }
-                
+
                 # Forward to Django
                 django_response = self.forward_to_django(llm_route, data)
-                
+
                 return llm_route, 0.9, django_response
         except Exception as e:
             print(f"LLM Classification Error: {e}")
-        
+
         # Fallback to TF-IDF similarity
         route_scores = self.get_route_similarity(user_command)
-        
+
         # Special handling for generic questions with non-specific tweet context
-        if not context.strip() and any(keyword in user_command.lower() for keyword in ['what', 'who', 'where', 'when', 'why', 'how']):
+        if not context.strip() and any(
+                keyword in user_command.lower() for keyword in ['what', 'who', 'where', 'when', 'why', 'how']):
             route_scores['tweet_helper'] *= 1.5
-        
+
         best_route = max(route_scores.items(), key=lambda x: x[1])
-        
+
         # Prepare data for Django forwarding
         data = {
             'userCommand': user_command,
             'originalTweet': original_tweet or '',
             'mediaData': media_data
         }
-        
+
         # Forward to Django
         django_response = self.forward_to_django(best_route[0], data)
-        
+
         return best_route[0], best_route[1], django_response
+
 
 # Global router instance (you'll need to provide your Google API key)
 router = None
 
+
 @app.route('/process-mention', methods=['POST'])
 def process_mention():
     global router
-    
+
     # Ensure router is initialized
     if router is None:
         return jsonify({'error': 'Router not initialized. Set GOOGLE_API_KEY.'}), 500
-    
+
     # Extract data from payload
     data = request.get_json()
-    
+
     # Validate input
     if not data or 'userCommand' not in data or 'originalTweet' not in data:
         return jsonify({'error': 'Invalid payload. Requires userCommand and originalTweet'}), 400
-    
+
     user_command = data['userCommand']
     original_tweet = data['originalTweet']
     media_data = data.get('mediaData')
-    
+
     # Route the instruction with media awareness
-    route_name, confidence, django_response  = router.route_instruction(
-        user_command, 
-        original_tweet, 
+    route_name, confidence, django_response = router.route_instruction(
+        user_command,
+        original_tweet,
         media_data
     )
-    
+
     # Prepare response matching previous router's structure
     response = {
         'success': True,
@@ -488,19 +493,21 @@ def process_mention():
             'original_tweet': original_tweet
         }
     }
-    
+
     # If media is present, include it in the response
     if media_data:
         response['mediaData'] = media_data
-    
+
     return jsonify(response)
+
 
 def initialize_router(api_key):
     """Initialize the global router with Gemini API key"""
     global router
     router = IntentRouter(api_key)
 
+
 if __name__ == '__main__':
     # Example initialization (replace with your actual API key)
-    initialize_router('')
-    app.run(debug=True, port=5000)
+    initialize_router(os.getenv('GEMINI_KEY'))
+    app.run(host='0.0.0.0',debug=True, port=5000)
