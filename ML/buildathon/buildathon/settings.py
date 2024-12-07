@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'fact_checker',
     'impersonation',
     'meme_creator',
-   # 'picture_perfect',
+   'picture_perfect',
    'screenshot_research',
     'sentiment_analyzer',
     'viral_thread',
