@@ -68,27 +68,6 @@ class BlueSkyBot:
                 image_data = response.content
                 return image_data
 
-            # Process image
-            # with Image.open(io.BytesIO(image_data)) as img:
-            #     img.thumbnail((1000, 1000))
-            #     buffer = io.BytesIO()
-            #     img.save(buffer, format='JPEG')
-            #     processed_image = buffer.getvalue()
-            #
-            # # Check image size
-            # if len(processed_image) > self.MAX_IMAGE_SIZE:
-            #     raise ValueError('Processed image exceeds maximum size')
-            #
-            # # Upload to Bluesky
-            # blob = await self.client.com.atproto.repo.upload_blob(processed_image)
-            # return {
-            #     '$type': 'app.bsky.embed.images',
-            #     'images': [{
-            #         'alt': 'Default response image',
-            #         'image': blob.blob
-            #     }]
-            # }
-
         except Exception as e:
             logger.error(f'Image processing error: {e}')
             return None
@@ -102,7 +81,7 @@ class BlueSkyBot:
 
             data = {
                 'userCommand': user_text,
-                'originalTweet': root_text
+                'originalTweet': root_text if root_text != '' else user_text
             }
 
             async with httpx.AsyncClient() as client:
@@ -185,30 +164,14 @@ class BlueSkyBot:
     async def reply_to_mention(self, mention, root_post, reply_text, image_embed=None):
         """Reply to a specific mention"""
         try:
-            post_params = {
-                'text': reply_text,
-                'reply': {
-                    'root': {
-                        'uri': root_post.uri if root_post else mention.uri,
-                        'cid': root_post.cid if root_post else mention.cid,
-                    },
-                    'parent': {
-                        'uri': mention.uri,
-                        'cid': mention.cid,
-                    }
-                }
-            }
-
             reply_to_root = models.create_strong_ref(root_post if root_post else mention)
             reply_to_parent = models.create_strong_ref(mention)
 
             if image_embed:
-                post_params['embed'] = image_embed
                 await self.client.send_image(image_alt=reply_text, image=image_embed, text=reply_text,
                                              reply_to=models.AppBskyFeedPost.ReplyRef(parent=reply_to_parent,
                                                                                       root=reply_to_root))
             else:
-                # await self.client.post(**post_params)
                 await self.client.send_post(text=reply_text,
                                             reply_to=models.AppBskyFeedPost.ReplyRef(parent=reply_to_parent,
                                                                                      root=reply_to_root))
@@ -247,8 +210,7 @@ class BlueSkyBot:
 
             for mention in mentions:
                 # Get the root post if it's a reply
-                root_post = await self.get_root_post(mention.record.reply.parent.uri) if hasattr(mention.record,
-                                                                                                 'reply') else None
+                root_post = await self.get_root_post(mention.record.reply.parent.uri) if mention.record.reply else None
 
                 # Process the mention
                 await self.process_middleware_response(mention, root_post)
