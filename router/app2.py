@@ -354,9 +354,11 @@ class IntentRouter:
         }
 
         # Special case handling for different categories
+        files = None
         if category == 'screenshot_research' and data.get('mediaData'):
             # For screenshot research, include media data
             payload['image'] = data['mediaData']
+            files = {"image": data['mediaData']}
 
         elif category == 'persona_simulation':
             payload['original_tweet'] = data.get('originalTweet', '')
@@ -379,7 +381,10 @@ class IntentRouter:
             payload['instructions'] = data.get('userCommand', '')
 
         try:
-            response = requests.post(url, json=payload)
+            if files:
+                response = requests.post(url, json=payload,files=files)
+            else:
+                response = requests.post(url, json=payload)
             response.raise_for_status()  # Raise an exception for bad responses
             return response.json()
         except requests.RequestException as e:
