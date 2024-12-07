@@ -220,13 +220,16 @@ class BlueSkyBot:
                 root_post = await self.get_root_post(mention.record.reply.parent.uri) if mention.record.reply else None
 
                 # Process the mention
-                await self.process_middleware_response(mention, root_post)
+                process_result = await self.process_middleware_response(mention, root_post)
 
                 # Mark notifications as read
-                await self.client.app.bsky.notification.update_seen({
-                    'seen_at': self.client.get_current_time_iso()
-                })
-                logger.error("Marked as read!")
+                if process_result :
+                    await self.client.app.bsky.notification.update_seen({
+                        'seen_at': self.client.get_current_time_iso()
+                    })
+                    logger.info("Marked as read!")
+                else:
+                    logger.error("Failed to mark as read!")
 
         except Exception as e:
             logger.error(f'Check mentions error: {e}')
