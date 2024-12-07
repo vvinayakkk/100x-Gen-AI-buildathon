@@ -4,7 +4,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
 from .agents import CelebrityImpersonationAgent
-
+from sentence_transformers import SentenceTransformer
+import re
+import numpy as np
 # In-memory data storage
 # In-memory data storage
 celebrities = [
@@ -468,38 +470,44 @@ def extract_celebrity_name(command):
     Returns the closest matching celebrity name or None if no match found.
     """
     # Clean the command
-    command = command.lower().strip()
-    
-    # Create a pattern from all celebrity names
-    celebrity_patterns = []
-    for celeb in celebrities:
-        # Get full name and possible variations
-        full_name = celeb['name'].lower()
-        name_parts = full_name.split()
-        
-        # Add full name and individual parts to patterns
-        celebrity_patterns.append(re.escape(full_name))
-        celebrity_patterns.extend(map(re.escape, name_parts))
-    
-    # Create regex pattern - join all names with | (OR)
-    pattern = '|'.join(celebrity_patterns)
-    
-    # Find all matches in the command
-    matches = re.findall(pattern, command.lower())
-    
-    if not matches:
-        return None
-        
-    # If we found matches, find the longest matching name (prefer full names over partial)
-    longest_match = max(matches, key=len)
-    
-    # Find the corresponding celebrity full name
-    for celeb in celebrities:
-        if longest_match in celeb['name'].lower():
-            return celeb['name']
-            
-    return None
-import re
+    cleaned_command = re.sub(r'\s+', ' ', command.lower().strip())
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+
+    celebrity_names = [celeb['name'] for celeb in celebrities]
+    name_embeddings = model.encode(celebrity_names)
+    potential_contexts = [
+        # Full name extraction
+        cleaned_command,
+        # First word extraction
+        cleaned_command.split()[0] if cleaned_command.split() else '',
+        # Last word extraction
+        cleaned_command.split()[-1] if cleaned_command.split() else ''
+    ]
+
+    # Compute embeddings for contexts
+    context_embeddings = model.encode(potential_contexts)
+
+    # Compute cosine similarities
+    max_similarity = -1
+    best_match_index = -1
+    threshold = 0.4
+    for context_embedding in context_embeddings:
+        # Compute cosine similarities between context and all celebrity names
+        similarities = np.dot(name_embeddings, context_embedding) / (
+                np.linalg.norm(name_embeddings, axis=1) *
+                np.linalg.norm(context_embedding)
+        )
+
+        # Find the maximum similarity
+        max_context_similarity = np.max(similarities)
+
+        if max_context_similarity > max_similarity:
+            max_similarity = max_context_similarity
+            best_match_index = np.argmax(similarities)
+
+    # Return best match if above threshold
+    return celebrity_names[best_match_index] if max_similarity >= threshold else None
+
 impersonations = []
 
 @api_view(['GET'])

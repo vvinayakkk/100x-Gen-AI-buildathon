@@ -313,7 +313,7 @@ const runBot = async () => {
   await checkMentions();
   
   // Set up interval with longer delay to avoid rate limits
-  setInterval(checkMentions, 120000);
+  setInterval(checkMentions, 30000);
 };
 
 process.on('unhandledRejection', (error) => {
