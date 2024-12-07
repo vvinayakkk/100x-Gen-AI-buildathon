@@ -78,7 +78,7 @@ class BlueSkyBot:
             # Extract relevant text
             user_text = mention.record.text.split('bsky.social')[-1].strip()
             root_text = root_post.record.text if root_post else ''
-
+            logger.info(f"Processing user_request - {user_text}")
             data = {
                 'userCommand': user_text,
                 'originalTweet': root_text if root_text != '' else user_text
@@ -108,11 +108,13 @@ class BlueSkyBot:
                 reply_chunks = self.split_content_into_chunks(ai_response)
                 for chunk in reply_chunks:
                     await self.reply_to_mention(mention, root_post, chunk)
+                return True
 
             elif category == "thread_generation":
                 ai_texts = result[:5][::-1]
                 for ai_text in ai_texts:
                     await self.reply_to_mention(mention, root_post, str(ai_text['content'])[:299])
+                return True
 
             elif category == "fact_checking":
                 articles = result.get('analyses', {}).get('wikipedia', {}).get('articles', [])
@@ -120,6 +122,7 @@ class BlueSkyBot:
                     reply_chunks = self.split_content_into_chunks(articles[0]['content'])
                     for chunk in reply_chunks:
                         await self.reply_to_mention(mention, root_post, chunk)
+                    return True
 
             elif category == "sentiment_analysis":
                 dominant_emotion = result.get('analysis', {}).get('emotion_profile', {}).get('dominant_emotion', '')
@@ -137,6 +140,7 @@ class BlueSkyBot:
                         f"By my analysis this tweet is: {dominant_emotion}",
                         image_embed
                     )
+                return True
 
             elif category == "meme_generation":
                 url = result.get('url')
@@ -148,14 +152,17 @@ class BlueSkyBot:
                         "Here's a response for you!",
                         image_embed
                     )
+                return True
 
             elif category == "tweet_helper":
                 ai_texts = result.get('result', '')
                 reply_chunks = self.split_content_into_chunks(ai_texts)
                 for chunk in reply_chunks:
                     await self.reply_to_mention(mention, root_post, chunk)
+                return True
 
-            return True
+            logger.error(f'Category - {category} not found')
+            return False
 
         except Exception as e:
             logger.error(f'Error handling response: {e}')
@@ -184,7 +191,7 @@ class BlueSkyBot:
         """Retrieve the root post for a given URI"""
         try:
             thread = await self.client.app.bsky.feed.get_post_thread({'uri': uri, 'depth': 0})
-            post = thread.thread.post if thread.thread and hasattr(thread.thread, 'post') else None
+            post = thread.thread.post if thread.thread and thread.thread.post else None
 
             return post
         except Exception as e:
