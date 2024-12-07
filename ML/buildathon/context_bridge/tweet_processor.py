@@ -11,49 +11,78 @@ class FlexibleTweetProcessor:
             temperature=0.9
         )
         
-        self.prompt = PromptTemplate(
-            input_variables=["tweet", "instructions"],
+        self.general_prompt = PromptTemplate(
+            input_variables=["context", "instructions"],
             template="""
-            System: You are an expert tweet processor designed to follow instructions precisely while maintaining responsible content standards.
-            Your Task:
-            1. First, understand the exact intent of the instructions
-            2. Then, execute those instructions as closely as possible while staying within content guidelines
-            3. Focus on the message and content rather than individuals
-            4. Use creative language and wit to achieve the desired effect
-            5. If asked to critique or roast, focus on the tweet's internal logic and content
-            Tweet: {tweet}
-            Instructions: {instructions}
-            Remember: 
-            - Follow the instructions' spirit exactly
-            - Stay within content guidelines by being clever and creative
-            - Focus on the message, not the messenger
-            - Use wit and wordplay to achieve the desired effect
-            - No need to be gentle - just be smart about execution
-            Transformed Result (execute instructions with precision):"""
+            System: You are a versatile AI assistant specializing in creative and precise responses for Twitter-style content.
+            
+            Context: {context}
+            
+            Specific Instructions: {instructions}
+            
+            Guidelines:
+            - Provide a response that is concise, engaging, and tailored to the Twitter format
+            - Use wit, creativity, and clarity
+            - Ensure the response is informative and captures the essence of the query
+            - If the context is a tweet, analyze it with a sharp, insightful perspective
+            
+            Your Response (creative and precise):"""
         )
         
-        self.chain = self.prompt | self.llm
-    
-    def process_tweet(self, tweet: str, instructions: str) -> str:
-        """Process a tweet based on user instructions."""
-        try:
-            instruction_mapping = {
-                "roast": "create a sharp, pointed critique of the tweet's message and logic",
-                "mock": "create an ironic analysis highlighting the tweet's contradictions",
-                "criticize": "deliver a precise critique focusing on the tweet's content and claims",
-                "insult": "craft a clever critique of the tweet's internal logic and assumptions"
+        self.critique_prompt = PromptTemplate(
+            input_variables=["tweet", "instructions"],
+            template="""
+            System: You are an expert tweet critic with razor-sharp wit and analytical skills.
+            
+            Tweet: {tweet}
+            
+            Critique Instructions: {instructions}
+            
+            Execution Guidelines:
+            - Deconstruct the tweet's logic with surgical precision
+            - Use clever wordplay and irony
+            - Focus on content and underlying assumptions
+            - Be entertainingly critical without being needlessly harsh
+            
+            Critical Analysis (witty and incisive):"""
+        )
+        
+    def _select_prompt(self, context, instructions):
+        """
+        Select the appropriate prompt based on the nature of the instructions.
+        """
+        critique_keywords = ['roast', 'mock', 'criticize', 'insult']
+        
+        if any(keyword in instructions.lower() for keyword in critique_keywords):
+            return {
+                'prompt': self.critique_prompt,
+                'inputs': {
+                    'tweet': context,
+                    'instructions': instructions
+                }
             }
+        else:
+            return {
+                'prompt': self.general_prompt,
+                'inputs': {
+                    'context': context,
+                    'instructions': instructions
+                }
+            }
+    
+    def process_tweet(self, context: str, instructions: str) -> str:
+        """Process a tweet or query based on user instructions."""
+        try:
+            # Select appropriate prompt
+            prompt_config = self._select_prompt(context, instructions)
             
-            processed_instructions = instruction_mapping.get(
-                instructions.lower(), 
-                instructions
-            )
+            # Create chain with selected prompt
+            chain = prompt_config['prompt'] | self.llm
             
-            result = self.chain.invoke({
-                "tweet": tweet,
-                "instructions": processed_instructions
-            })
+            # Invoke the chain with appropriate inputs
+            result = chain.invoke(prompt_config['inputs'])
             
             return result.content if result.content else "Processing failed. Please try again."
+        
         except Exception as e:
-            return f"Error processing tweet: {str(e)}"
+            return f"Error processing request: {str(e)}"
