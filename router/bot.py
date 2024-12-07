@@ -5,7 +5,7 @@ from typing import List
 
 import dotenv
 import httpx
-from atproto import AsyncClient, models
+from atproto import AsyncClient, models,client_utils
 
 # Configure logging
 logging.basicConfig(
@@ -161,6 +161,14 @@ class BlueSkyBot:
                     await self.reply_to_mention(mention, root_post, chunk)
                 return True
 
+            elif category == "screenshot_research":
+                ai_texts = result.get('analysis', {}).get('analysis', {})
+
+                reply_chunks = self.split_content_into_chunks(ai_texts)
+                for chunk in reply_chunks:
+                    await self.reply_to_mention(mention, root_post, chunk)
+                return True
+
             logger.error(f'Category - {category} not found')
             return False
 
@@ -179,7 +187,7 @@ class BlueSkyBot:
                                              reply_to=models.AppBskyFeedPost.ReplyRef(parent=reply_to_parent,
                                                                                       root=reply_to_root))
             else:
-                await self.client.send_post(text=reply_text,
+                await self.client.send_post(text=client_utils.TextBuilder().text(reply_text),
                                             reply_to=models.AppBskyFeedPost.ReplyRef(parent=reply_to_parent,
                                                                                      root=reply_to_root))
             logger.info('Successfully replied to mention')

@@ -382,7 +382,7 @@ class IntentRouter:
 
         try:
             if files:
-                response = requests.post(url, json=payload,files=files)
+                response = requests.post(url,files=files)
             else:
                 response = requests.post(url, json=payload)
             response.raise_for_status()  # Raise an exception for bad responses
