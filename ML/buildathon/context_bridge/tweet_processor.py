@@ -13,8 +13,7 @@ class FlexibleTweetProcessor:
         
         self.general_prompt = PromptTemplate(
             input_variables=["context", "instructions"],
-            template="""
-            System: You are a versatile AI assistant specializing in creative and precise responses for Twitter-style content.
+            template="""System: You are a versatile AI assistant specializing in creative and precise responses for Twitter-style content.
             
             Context: {context}
             
@@ -31,8 +30,7 @@ class FlexibleTweetProcessor:
         
         self.critique_prompt = PromptTemplate(
             input_variables=["tweet", "instructions"],
-            template="""
-            System: You are an expert tweet critic with razor-sharp wit and analytical skills.
+            template="""System: You are an expert tweet critic with razor-sharp wit and analytical skills.
             
             Tweet: {tweet}
             
@@ -46,14 +44,33 @@ class FlexibleTweetProcessor:
             
             Critical Analysis (witty and incisive):"""
         )
+
+        self.generic_prompt = PromptTemplate(
+            input_variables=["instructions"],
+            template="""System: You are an AI assistant capable of answering generic questions accurately and concisely.
+            
+            Specific Instructions: {instructions}
+            
+            Your Response (direct and informative):"""
+        )
         
     def _select_prompt(self, context, instructions):
         """
         Select the appropriate prompt based on the nature of the instructions.
+        This function now also checks for generic questions.
         """
         critique_keywords = ['roast', 'mock', 'criticize', 'insult']
+        generic_keywords = ['what', 'how', 'why', 'explain', 'define']
         
-        if any(keyword in instructions.lower() for keyword in critique_keywords):
+        # Check if the instructions are more aligned with a generic question
+        if any(keyword in instructions.lower() for keyword in generic_keywords):
+            return {
+                'prompt': self.generic_prompt,
+                'inputs': {
+                    'instructions': instructions
+                }
+            }
+        elif any(keyword in instructions.lower() for keyword in critique_keywords):
             return {
                 'prompt': self.critique_prompt,
                 'inputs': {
@@ -82,6 +99,10 @@ class FlexibleTweetProcessor:
             # Invoke the chain with appropriate inputs
             result = chain.invoke(prompt_config['inputs'])
             
+            # If the request is generic, add a "savage" comment
+            if any(keyword in instructions.lower() for keyword in ['what', 'how', 'why', 'define']):
+                result.content += "\n\nP.S. I'm answering this for you, but just so you know, I'm built for more advanced features than answering simple questions. 😏 Don't ask me silly stuff like that again! JK, just kidding—I'm always here for you. 😉"
+
             return result.content if result.content else "Processing failed. Please try again."
         
         except Exception as e:
