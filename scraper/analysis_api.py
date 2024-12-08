@@ -22,7 +22,7 @@ from atproto import Client
 import json
 from datetime import datetime
 import asyncio
-
+import logging
 # Replace LLMChain with a direct runnable sequence
 # chain = prompt | self.gemini_llm
 # result = chain.invoke({
