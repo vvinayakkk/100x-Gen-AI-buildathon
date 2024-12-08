@@ -13,6 +13,9 @@ analyzer = TweetAnalyzer()
 @require_http_methods(["POST"])
 def analyze_tweet(request):
     try:
+        # Check if analysis type is specified
+        analysis_type = request.POST.get('analysis_type', 'default')
+        
         # Check if image file is in the request
         if 'image' not in request.FILES:
             return JsonResponse({'error': 'No image file provided'}, status=400)
@@ -39,11 +42,22 @@ def analyze_tweet(request):
             report = loop.run_until_complete(analyzer.generate_report(temp_path))
             formatted_report = analyzer.format_report(report)
 
+            # Additional processing based on analysis type could be added here
+            additional_processing = {}
+            if analysis_type == 'detailed':
+                # Add more detailed analysis or specific processing
+                additional_processing['extra_details'] = 'Detailed analysis requested'
+            elif analysis_type == 'summary':
+                # Potentially generate a more concise report
+                additional_processing['summary'] = 'Condensed analysis'
+
             return JsonResponse({
                 'success': True,
                 'report': formatted_report,
                 'extracted_text': report.get('extracted_text', ''),
                 'analysis': report.get('analysis', {}),
+                'analysis_type': analysis_type,
+                'additional_processing': additional_processing
             })
 
         finally:
