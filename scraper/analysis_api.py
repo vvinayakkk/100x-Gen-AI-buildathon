@@ -184,7 +184,7 @@ class TrendAnalyzer:
                 trend_data = json.load(f)
 
             # Extract texts from top posts
-            texts = [post['text'] for post in trend_data.get('postMetrics', {}).get('topPosts', [])]
+            texts = [post['text'] for post in trend_data['post_metrics']['top_posts']]
 
             if not texts:
                 self.logger.warning(f"No texts found for {category} trends")
@@ -200,8 +200,8 @@ class TrendAnalyzer:
             # Prepare trend analysis
             trend_analysis = {
                 'category': category,
-                'topHashtags': trend_data.get('topHashtags', []),
-                'postMetrics': trend_data.get('postMetrics', {}),
+                'topHashtags': trend_data.get('top_hashtags', []),
+                'post_metrics': trend_data.get('post_metrics', {}),
                 'sentiment_analysis': sentiments,
                 'topic_clusters': topics,
                 'ai_insights': ai_insights
