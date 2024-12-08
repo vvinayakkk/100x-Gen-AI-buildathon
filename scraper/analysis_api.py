@@ -2,10 +2,11 @@ import os
 import json
 import asyncio
 import logging
+import re
 from datetime import datetime
 import traceback
 
-from atproto import Client
+from atproto import Client,client_utils
 import numpy as np
 import pandas as pd
 import torch
@@ -23,21 +24,21 @@ class TrendAnalyzer:
         Initialize TrendAnalyzer with logging and ML models
         """
         self.logger = logger or logging.getLogger(__name__)
-        
+
         # Ensure directories exist
         self.ensure_directories_exist()
-        
+
         # Initialize models
         self._init_models()
 
     def ensure_directories_exist(self):
         """Create necessary directories if they don't exist."""
         directories = [
-            'logs', 
-            'data/trends', 
+            'logs',
+            'data/trends',
             'analysis_results'
         ]
-        
+
         for directory in directories:
             os.makedirs(directory, exist_ok=True)
 
@@ -46,14 +47,14 @@ class TrendAnalyzer:
         try:
             # Financial sentiment model
             self.financial_sentiment = pipeline(
-                "sentiment-analysis", 
+                "sentiment-analysis",
                 model="ProsusAI/finbert",
                 top_k=None
             )
 
             # Gemini for advanced analysis
             self.gemini_llm = ChatGoogleGenerativeAI(
-                model="gemini-pro", 
+                model="gemini-pro",
                 google_api_key="AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE"  # Replace with your API key
             )
         except Exception as e:
@@ -70,7 +71,7 @@ class TrendAnalyzer:
                 'sentiment': result[0]['label'],
                 'confidence': result[0]['score']
             })
-        
+
         sentiments_sorted = sorted(sentiments, key=lambda x: x['confidence'], reverse=True)
         return {
             'top_positive': [s for s in sentiments_sorted if s['sentiment'] == 'positive'][:5],
@@ -82,14 +83,14 @@ class TrendAnalyzer:
         """Perform topic clustering using TF-IDF and KMeans"""
         if not texts:
             return {'clusters': [], 'centroids': []}
-        
+
         vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
         X = vectorizer.fit_transform(texts)
-        
+
         n_clusters = min(3, len(texts))
         kmeans = KMeans(n_clusters=n_clusters, random_state=42)
         kmeans.fit(X)
-        
+
         return {
             'clusters': kmeans.labels_.tolist(),
             'centroids': kmeans.cluster_centers_.tolist()
@@ -127,7 +128,7 @@ class TrendAnalyzer:
                     
                     """
 
-                    
+
                 ),
                 'tech': PromptTemplate(
                     input_variables=['texts'],
@@ -167,7 +168,7 @@ class TrendAnalyzer:
                 texts='\n'.join(texts[:10]),
                 category=category
             )
-            
+
             return str(result)
         except Exception as e:
             self.logger.error(f"AI insights generation error for {category}: {e}")
@@ -178,24 +179,24 @@ class TrendAnalyzer:
         try:
             # Load trend data
             filepath = os.path.join('data', 'trends', f'{category}_trends.json')
-            
+
             with open(filepath, 'r', encoding='utf-8') as f:
                 trend_data = json.load(f)
-            
+
             # Extract texts from top posts
             texts = [post['text'] for post in trend_data.get('postMetrics', {}).get('topPosts', [])]
-            
+
             if not texts:
                 self.logger.warning(f"No texts found for {category} trends")
                 return None
-            
+
             # Perform analyses
             sentiments = self.advanced_sentiment_analysis(texts)
             topics = self._perform_topic_clustering(texts)
-            
+
             # Generate AI insights (synchronous for now)
             ai_insights = self.generate_ai_insights(texts, category)
-            
+
             # Prepare trend analysis
             trend_analysis = {
                 'category': category,
@@ -205,15 +206,15 @@ class TrendAnalyzer:
                 'topic_clusters': topics,
                 'ai_insights': ai_insights
             }
-            
+
             # Save analysis result
             output_file = os.path.join('analysis_results', f'{category}_trend_analysis.json')
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(trend_analysis, f, indent=2)
-            
+
             self.logger.info(f"Analysis completed for {category}")
             return trend_analysis
-        
+
         except Exception as e:
             self.logger.error(f"Error in {category} trend analysis: {e}")
             traceback.print_exc()
@@ -224,10 +225,10 @@ class BlueskyPoster:
         """Initialize Bluesky Poster"""
         self.logger = logger or logging.getLogger(__name__)
         self.client = Client()
-        
+
         # Initialize Gemini for post generation
         self.gemini_llm = ChatGoogleGenerativeAI(
-            model="gemini-pro", 
+            model="gemini-pro",
             google_api_key="AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE"  # Replace with your API key
         )
 
@@ -250,36 +251,36 @@ class BlueskyPoster:
         try:
             with open(analysis_file, 'r', encoding='utf-8') as f:
                 analysis_data = json.load(f)
-            
+
             category = analysis_data['category']
             insights = str(analysis_data.get('ai_insights', ''))
-            
+
             # Robust sentiment handling
             sentiments = analysis_data.get('sentiment_analysis', {})
             top_sentiment = 'Recent trends'
-            
+
             # Try multiple ways to extract a meaningful sentiment text
             try:
                 # First, try the nested structure
                 if sentiments.get('top_positive'):
                     top_sentiment = sentiments['top_positive'][0].get('text', top_sentiment)
-                
+
                 # If that fails, try a different approach
                 elif 'sentiment' in sentiments:
                     top_sentiment = next(
-                        (item.get('text', top_sentiment) 
-                        for item in sentiments.get('sentiment', []) 
+                        (item.get('text', top_sentiment)
+                        for item in sentiments.get('sentiment', [])
                         if item.get('sentiment') == 'positive'),
                         top_sentiment
                     )
             except Exception:
                 # If all else fails, use a generic trend text
                 pass
-            
+
             # Safe hashtag handling
             top_hashtags = analysis_data.get('topHashtags', [])
             # Convert hashtags to strings and ensure they start with #
-            safe_hashtags = [f'#{tag}' if not str(tag).startswith('#') else str(tag) 
+            safe_hashtags = [f'#{tag}' if not str(tag).startswith('#') else str(tag)
                             for tag in top_hashtags[:2]]
             default_hashtags = {
                 'financial': ['#Finance', '#Investment'],
@@ -287,7 +288,7 @@ class BlueskyPoster:
                 'crypto': ['#Crypto', '#Blockchain'],
                 'entertainment': ['#EntertainmentNews', '#PopCulture']
             }
-            
+
             # Use default hashtags if no hashtags found
             hashtags = safe_hashtags if safe_hashtags else default_hashtags.get(category, ['#Trends'])
             hashtag_string = ' '.join(hashtags)
@@ -309,21 +310,21 @@ class BlueskyPoster:
     {hashtag_string}
 
     Crisp market update.""",
-                
+
                 'tech': f"""{emoji} Tech Frontier: {top_sentiment}
     - Innovation highlights
     - Tech trend snapshot
     {hashtag_string}
 
     Cutting-edge insights.""",
-                
+
                 'crypto': f"""{emoji} Crypto Momentum: {top_sentiment}
     - Blockchain updates
     - Crypto market pulse
     {hashtag_string}
 
     Quick crypto insights.""",
-                
+
                 'entertainment': f"""{emoji} Entertainment Buzz: {top_sentiment}
     - Pop culture highlights
     - Trending entertainment
@@ -331,10 +332,10 @@ class BlueskyPoster:
 
     What's hot right now."""
             }
-            
+
             # Fallback to a generic prompt if category not found
             prompt = prompts.get(category, prompts['tech'])
-            
+
             # Use Gemini to refine and format the post
             prompt_template = PromptTemplate(
                 input_variables=['insights', 'prompt'],
@@ -354,16 +355,16 @@ class BlueskyPoster:
     - dont use bold or italic text in the post just normal text and emojies.
     """
             )
-            
+
             chain = LLMChain(llm=self.gemini_llm, prompt=prompt_template)
             post_text = chain.run({
                 'insights': insights,
                 'prompt': prompt
             })
-            
+
             # Ensure post is not empty and fits character limit
             formatted_post = self.format_post(str(post_text))
-            
+
             # Additional check to prevent empty posts
             if not formatted_post or len(formatted_post) < 10:
                 # Fallback to a generic post if generation fails
@@ -374,9 +375,9 @@ class BlueskyPoster:
                     'entertainment': f"🎬 Entertainment spotlight: Where creativity meets excitement! {hashtag_string}"
                 }
                 formatted_post = fallback_posts.get(category, fallback_posts['tech'])
-            
+
             return formatted_post
-        
+
         except Exception as e:
             self.logger.error(f"Post generation error: {e}")
             traceback.print_exc()
@@ -386,11 +387,11 @@ class BlueskyPoster:
         """Post to Bluesky"""
         if not post:
             return False
-        
+
         try:
 
             self.client.login('smartbot.bsky.social', 'abcd@123')
-            self.client.send_post(text=post)
+            self.client.send_post(text=parse_text_to_facets(post))
             return True
         except Exception as e:
             self.logger.error(f"Bluesky posting failed: {e}")
@@ -401,10 +402,10 @@ def setup_logging():
     """Set up logging configuration"""
     log_dir = 'logs'
     os.makedirs(log_dir, exist_ok=True)
-    
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = os.path.join(log_dir, f'trend_poster_{timestamp}.log')
-    
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s: %(message)s',
@@ -419,35 +420,98 @@ async def main():
     """Main workflow"""
     logger = setup_logging()
     logger.info("Trend Analysis and Bluesky Poster Starting...")
-    
+
     # Initialize components
     trend_analyzer = TrendAnalyzer(logger)
     bluesky_poster = BlueskyPoster(logger)
-    
+
     # Categories to process
     categories = ['finance', 'crypto', 'entertainment', 'tech']
-    
+
     try:
         # Analyze trends for each category
         for category in categories:
             # Analyze trend and save results
             trend_analysis = trend_analyzer.analyze_trend_data(category)
-            
+
             if trend_analysis:
                 # Generate Bluesky post from analysis
                 analysis_file = os.path.join('analysis_results', f'{category}_trend_analysis.json')
                 post = bluesky_poster.generate_post(analysis_file)
-                
+
                 # Post to Bluesky
                 if post:
                     bluesky_poster.post_to_bluesky(post)
-                
+
                 # Add a small delay between posts
                 await asyncio.sleep(2)
-    
+
     except Exception as e:
         logger.error(f"Workflow error: {e}")
         traceback.print_exc()
+
+def parse_text_to_facets(text) :
+        """
+        Parse a string and automatically create appropriate facets for mentions, links, and tags.
+
+        Args:
+            text (str): Input text to parse and create facets for
+
+        Returns:
+            client_utils.TextBuilder: TextBuilder object with detected facets
+        """
+        # Initialize TextBuilder
+        text_builder = client_utils.TextBuilder()
+
+        # Regular expressions for detection
+        mention_pattern = r'@(\w+)'
+        url_pattern = r'https?://\S+'
+        tag_pattern = r'#(\w+)'
+
+        # Keep track of last processed index to handle overlapping matches
+        last_index = 0
+
+        # Find all matches
+        all_matches = []
+
+        # Collect mentions
+        for match in re.finditer(mention_pattern, text):
+            all_matches.append(('mention', match))
+
+        # Collect URLs
+        for match in re.finditer(url_pattern, text):
+            all_matches.append(('link', match))
+
+        # Collect tags
+        for match in re.finditer(tag_pattern, text):
+            all_matches.append(('tag', match))
+
+        # Sort matches by their start index
+        all_matches.sort(key=lambda x: x[1].start())
+
+        # Process matches
+        for match_type, match in all_matches:
+            # Add text before the match
+            if match.start() > last_index:
+                text_builder.text(text[last_index:match.start()])
+
+            # Add the matched content with appropriate facet
+            if match_type == 'mention':
+                # Assumes a did lookup or placeholder - in real world, you'd want to resolve the DID
+                text_builder.mention(match.group(1), f'did:placeholder:{match.group(1)}')
+            elif match_type == 'link':
+                text_builder.link(match.group(0), match.group(0))
+            elif match_type == 'tag':
+                text_builder.tag(f'#{match.group(1)}', match.group(1))
+
+            # Update last processed index
+            last_index = match.end()
+
+        # Add any remaining text
+        if last_index < len(text):
+            text_builder.text(text[last_index:])
+
+        return text_builder
 
 if __name__ == '__main__':
     asyncio.run(main())
