@@ -83,22 +83,34 @@ class BlueSkyBot:
 
             logger.info(f"Processing user_request - {user_text}")
             if root_post and root_post.embed:
-                image_url = root_post.embed.images[0]['thumb']
-                image_data = await self.process_and_upload_image(image_url)
-                data = {
-                    'userCommand': user_text,
-                    'originalTweet': root_text if root_text != '' else user_text,
-                    'mediaData': str(base64.b64encode(image_data).decode('utf-8'))
-                }
-            else:
-                if mention_post.embed:
-                    image_url = mention_post.embed.images[0]['thumb']
+                if isinstance(root_post.embed, dict) and 'images' in root_post.embed:
+                    image_url = root_post.embed.images[0]['thumb']
                     image_data = await self.process_and_upload_image(image_url)
                     data = {
                         'userCommand': user_text,
                         'originalTweet': root_text if root_text != '' else user_text,
                         'mediaData': str(base64.b64encode(image_data).decode('utf-8'))
                     }
+                else:
+                    data = {
+                        'userCommand': user_text,
+                        'originalTweet': root_text if root_text != '' else user_text
+                    }
+            else:
+                if mention_post.embed:
+                    if isinstance(mention_post.embed,dict) and 'images' in mention_post.embed:
+                        image_url = mention_post.embed.images[0]['thumb']
+                        image_data = await self.process_and_upload_image(image_url)
+                        data = {
+                            'userCommand': user_text,
+                            'originalTweet': root_text if root_text != '' else user_text,
+                            'mediaData': str(base64.b64encode(image_data).decode('utf-8'))
+                        }
+                    else:
+                        data = {
+                            'userCommand': user_text,
+                            'originalTweet': root_text if root_text != '' else user_text
+                        }
                 else:
                     data = {
                         'userCommand': user_text,

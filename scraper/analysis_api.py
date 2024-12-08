@@ -109,7 +109,7 @@ class TrendAnalyzer:
                     4. Sector-specific insights
                     5. Short-term and long-term market outlook
                     
-                    first generete the insights and then summarize them in a way that it is under 280 characters.
+                    first generate the insights and then summarize them in a way that it is under 280 characters.
 
                     Detailed Financial Texts: {texts}"""
                 ),
@@ -124,7 +124,7 @@ class TrendAnalyzer:
                     
                     Detailed Crypto Texts: {texts}
                     
-                    first generete the insights and then summarize them in a way that it is under 280 characters.
+                    first generate the insights and then summarize them in a way that it is under 280 characters.
                     
                     """
 
@@ -141,7 +141,7 @@ class TrendAnalyzer:
                     
                     Detailed Tech Texts: {texts}
                     
-                    first generete the insights and then summarize them in a way that it is under 280 characters.
+                    first generate the insights and then summarize them in a way that it is under 280 characters.
                     
                     """
                 ),
@@ -154,7 +154,7 @@ class TrendAnalyzer:
                     4. Potential industry shifts
                     5. Notable upcoming releases and developments
                     
-                    first generete the insights and then summarize them in a way that it is under 280 characters.
+                    first generate the insights and then summarize them in a way that it is under 280 characters.
 
                     Detailed Entertainment Texts: {texts}"""
                 )
