@@ -26,5 +26,6 @@ urlpatterns = [
     path('api/',include('picture_perfect.urls')),
     path('api/',include('screenshot_research.urls')),
     path('api/',include('sentiment_analyzer.urls')),
-    path('api/',include('viral_thread.urls'))
+    path('api/',include('viral_thread.urls')),
+    path('api/',include('comment_analyzer.urls')),
 ]
