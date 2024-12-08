@@ -4,7 +4,7 @@ from . import views
 
 urlpatterns = [
     # Endpoint for image analysis
-    path('analyze-image/', views.analyze_image, name='analyze_image'),
+    path('analyze-image/', views.analyze_image_view, name='analyze_image'),
     
     # Optional health check endpoint
     path('health/', views.health_check, name='health_check')

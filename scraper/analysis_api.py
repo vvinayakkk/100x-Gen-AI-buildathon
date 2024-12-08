@@ -18,7 +18,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from flask import Flask, jsonify
 from flask_cors import CORS
-# ... other imports ...
+from atproto import Client
+import json
+from datetime import datetime
+
 app = Flask(__name__)
 
 # Configure CORS properly
@@ -29,6 +32,163 @@ CORS(app, resources={
         "allow_headers": ["Content-Type", "Authorization"]
     }
 })
+
+class BlueskyPoster:
+    def __init__(self):
+        print("\n[INIT] Initializing BlueskyPoster...")
+        self.client = Client()
+        self.client.login('', '')
+        print("[INIT] Successfully logged into Bluesky")
+        
+        self.gemini_llm = ChatGoogleGenerativeAI(
+            model="gemini-pro",
+            google_api_key=""
+        )
+        print("[INIT] BlueskyPoster initialization complete")
+
+    def format_post(self, text, max_length=300):
+        """Format post to meet Bluesky requirements."""
+        # Remove extra whitespace and newlines
+        text = ' '.join(text.split())
+        
+        # Ensure post doesn't exceed max length
+        if len(text) > max_length:
+            # Find the last complete sentence that fits
+            sentences = text[:max_length-3].split('. ')
+            formatted_text = '. '.join(sentences[:-1]) + '...'
+            return formatted_text[:max_length]
+        return text
+
+    def generate_post(self, analysis_data, category):
+        """Generate Twitter-style post based on category and analysis data."""
+        if not analysis_data:
+            print(f"[ERROR] No analysis data provided for {category}")
+            return None
+
+        # Extract required fields with safe fallbacks
+        total_posts = analysis_data.get('total_posts', 0)
+        sentiment_data = analysis_data.get('sentiment_analysis', {})
+        topics = analysis_data.get('topic_clusters', {})
+        insights = analysis_data.get('ai_insights', '')
+
+        prompt_templates = {
+            'financial': """Write a casual but informative tweet-style market update (under 280 chars). Format: 
+            📈 Market Pulse: [key insight]
+            
+            Trending: [2-3 key points separated by •]
+            
+            Keep it conversational and easy to read. No markdown or asterisks.""",
+            
+            'tech': """Write a casual but informative tweet-style tech update (under 280 chars). Format:
+            🔮 Tech Watch: [key insight]
+            
+            Hot Topics: [2-3 key points separated by •]
+            
+            Keep it conversational and easy to read. No markdown or asterisks.""",
+            
+            'crypto': """Write a casual but informative tweet-style crypto update (under 280 chars). Format:
+            ₿ Crypto Update: [key insight]
+            
+            Trending: [2-3 key points separated by •]
+            
+            Keep it conversational and easy to read. No markdown or asterisks.""",
+            
+            'entertainment': """Write a casual but informative tweet-style entertainment update (under 280 chars). Format:
+            🎬 Entertainment Buzz: [key insight]
+            
+            Trending: [2-3 key points separated by •]
+            
+            Keep it conversational and easy to read. No markdown or asterisks."""
+        }
+
+        try:
+            prompt = PromptTemplate(
+                input_variables=['data_summary'],
+                template=prompt_templates.get(category.lower(), prompt_templates['financial'])
+            )
+
+            chain = LLMChain(llm=self.gemini_llm, prompt=prompt)
+            
+            data_summary = {
+                'posts_analyzed': total_posts,
+                'key_sentiment': sentiment_data.get('top_positive', [])[:2],
+                'main_topics': topics,
+                'key_insights': insights[:200]
+            }
+            
+            result = chain.run(data_summary=json.dumps(data_summary))
+            return self.format_post(result)
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to generate {category} post: {str(e)}")
+            return None
+
+    def format_post(self, text, max_length=280):
+        """Format post to meet Twitter requirements and style."""
+        # Clean up any markdown or extra formatting
+        text = text.replace('**', '')
+        text = text.replace('*', '')
+        text = text.replace('###', '')
+        text = text.replace('#', '')
+        
+        # Remove extra whitespace and normalize spacing
+        text = ' '.join(text.split())
+        
+        # Clean up bullet points and separators
+        text = text.replace(' - ', ' • ')
+        text = text.replace(' -- ', ' • ')
+        
+        # Ensure post doesn't exceed max length
+        if len(text) > max_length:
+            sentences = text[:max_length-1].split('•')
+            formatted_text = '•'.join(sentences[:-1]).strip()
+            return formatted_text
+            
+        return text
+    
+    def post_updates(self):
+        """Post all analysis updates to Bluesky."""
+        print("\n[POSTING] Starting update cycle...")
+        
+        analyses = {
+            'financial': 'financial_news_analysis.json',
+            'tech': 'tech_trend_analysis.json',
+            'crypto': 'crypto_analysis.json',
+            'entertainment': 'entertainment_trend_analysis.json'
+        }
+
+        for category, filename in analyses.items():
+            try:
+                filepath = os.path.join('analysis_results', filename)
+                if not os.path.exists(filepath):
+                    print(f"[WARNING] Analysis file not found: {filename}")
+                    continue
+                    
+                with open(filepath, 'r') as f:
+                    analysis_data = json.load(f)
+                
+                post = self.generate_post(analysis_data, category)
+                
+                if post:
+                    self.client.send_post(text=post)
+                    print(f"[SUCCESS] Posted {category} update ({len(post)} chars)")
+                    time.sleep(2)  # Rate limiting
+            
+            except Exception as e:
+                print(f"[ERROR] Failed to post {category} update: {str(e)}")
+                continue
+
+        print("[POSTING] Update cycle completed")
+
+def run_analysis_and_post(financial_analyzer, trend_analyzer, poster):
+    """Combined function to run all analyses and posting."""
+    try:
+        financial_analyzer.analyze_financial_data()
+        trend_analyzer.analyze_crypto_data()
+        trend_analyzer.analyze_trend_data()
+        poster.post_updates()
+    except Exception as e:
+        print(f"[ERROR] Analysis cycle failed: {str(e)}")
 
 # Add CORS headers to all responses
 @app.after_request
@@ -387,14 +547,37 @@ def start_analysis_thread():
     analysis_thread = threading.Thread(target=run_periodic_analysis, args=(financial_analyzer, trend_crypto_analyzer))
     analysis_thread.start()
 
+def run_scheduler():
+    """Run the scheduler continuously."""
+    while True:
+        schedule.run_pending()time.sleep(1)
+
 if __name__ == '__main__':
-    # Run initial analysis to generate files
-    financial_analyzer.analyze_financial_data()
-    trend_crypto_analyzer.analyze_crypto_data()
-    trend_crypto_analyzer.analyze_trend_data()
+    print("\n[STARTUP] Initializing analysis system...")
     
-    # Start the periodic analysis thread
-    start_analysis_thread()
+    financial_analyzer = FinancialAnalyzer()
+    trend_crypto_analyzer = TrendCryptoAnalyzer()
+    bluesky_poster = BlueskyPoster()
     
-    # Run the Flask app
-    app.run(debug=True, port=5000)
+    # Run initial analysis cycle
+    print("[STARTUP] Running initial analyses...")
+    run_analysis_and_post(financial_analyzer, trend_crypto_analyzer, bluesky_poster)
+    
+    # Schedule periodic runs
+    schedule.every(10).minutes.do(
+        run_analysis_and_post, 
+        financial_analyzer, 
+        trend_crypto_analyzer, 
+        bluesky_poster
+    )
+    
+    # Start scheduler in a daemon thread with continuous loop
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
+    print("[STARTUP] Scheduler thread started")
+    
+    # Run Flask app
+    app = Flask(__name__)
+    CORS(app)
+    app.run(debug=False, port=5000)
