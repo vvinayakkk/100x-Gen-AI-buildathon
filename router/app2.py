@@ -365,6 +365,7 @@ class IntentRouter:
                 files = {
                     'image': ('image.jpg', io.BytesIO(image_data), 'image/jpeg')
                 }
+                payload['analysis_type'] = data.get('userCommand', '')
             except Exception as e:
                 print(f"Error processing image data: {e}")
                 return {

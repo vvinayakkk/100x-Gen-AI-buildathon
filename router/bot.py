@@ -2,6 +2,7 @@ import asyncio
 import base64
 import logging
 import os
+import re
 from typing import List
 
 import dotenv
@@ -73,7 +74,7 @@ class BlueSkyBot:
             logger.error(f'Image processing error: {e}', exc_info=True)
             return None
 
-    async def process_middleware_response(self, mention, root_post=None):
+    async def process_middleware_response(self, mention, root_post=None, mention_post=None):
         """Process response from middleware API"""
         try:
             # Extract relevant text
@@ -90,10 +91,19 @@ class BlueSkyBot:
                     'mediaData': str(base64.b64encode(image_data).decode('utf-8'))
                 }
             else:
-                data = {
-                    'userCommand': user_text,
-                    'originalTweet': root_text if root_text != '' else user_text
-                }
+                if mention_post.embed:
+                    image_url = mention_post.embed.images[0]['thumb']
+                    image_data = await self.process_and_upload_image(image_url)
+                    data = {
+                        'userCommand': user_text,
+                        'originalTweet': root_text if root_text != '' else user_text,
+                        'mediaData': str(base64.b64encode(image_data).decode('utf-8'))
+                    }
+                else:
+                    data = {
+                        'userCommand': user_text,
+                        'originalTweet': root_text if root_text != '' else user_text
+                    }
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -245,9 +255,10 @@ class BlueSkyBot:
             for mention in mentions:
                 # Get the root post if it's a reply
                 root_post = await self.get_root_post(mention.record.reply.parent.uri) if mention.record.reply else None
+                mention_post = await self.get_root_post(mention.uri)
 
                 # Process the mention
-                process_result = await self.process_middleware_response(mention, root_post)
+                process_result = await self.process_middleware_response(mention, root_post, mention_post)
 
                 # Mark notifications as read
                 if process_result :
@@ -273,6 +284,68 @@ class BlueSkyBot:
             await self.check_mentions()
             await asyncio.sleep(30)
 
+    def parse_text_to_facets(text: str) -> client_utils.TextBuilder:
+        """
+        Parse a string and automatically create appropriate facets for mentions, links, and tags.
+
+        Args:
+            text (str): Input text to parse and create facets for
+
+        Returns:
+            client_utils.TextBuilder: TextBuilder object with detected facets
+        """
+        # Initialize TextBuilder
+        text_builder = client_utils.TextBuilder()
+
+        # Regular expressions for detection
+        mention_pattern = r'@(\w+)'
+        url_pattern = r'https?://\S+'
+        tag_pattern = r'#(\w+)'
+
+        # Keep track of last processed index to handle overlapping matches
+        last_index = 0
+
+        # Find all matches
+        all_matches = []
+
+        # Collect mentions
+        for match in re.finditer(mention_pattern, text):
+            all_matches.append(('mention', match))
+
+        # Collect URLs
+        for match in re.finditer(url_pattern, text):
+            all_matches.append(('link', match))
+
+        # Collect tags
+        for match in re.finditer(tag_pattern, text):
+            all_matches.append(('tag', match))
+
+        # Sort matches by their start index
+        all_matches.sort(key=lambda x: x[1].start())
+
+        # Process matches
+        for match_type, match in all_matches:
+            # Add text before the match
+            if match.start() > last_index:
+                text_builder.text(text[last_index:match.start()])
+
+            # Add the matched content with appropriate facet
+            if match_type == 'mention':
+                # Assumes a did lookup or placeholder - in real world, you'd want to resolve the DID
+                text_builder.mention(match.group(1), f'did:placeholder:{match.group(1)}')
+            elif match_type == 'link':
+                text_builder.link(match.group(0), match.group(0))
+            elif match_type == 'tag':
+                text_builder.tag(f'#{match.group(1)}', match.group(1))
+
+            # Update last processed index
+            last_index = match.end()
+
+        # Add any remaining text
+        if last_index < len(text):
+            text_builder.text(text[last_index:])
+
+        return text_builder
 
 async def main():
     bot = BlueSkyBot()
