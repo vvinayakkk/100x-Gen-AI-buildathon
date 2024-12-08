@@ -78,11 +78,21 @@ class BlueSkyBot:
             # Extract relevant text
             user_text = mention.record.text.split('bsky.social')[-1].strip()
             root_text = root_post.record.text if root_post else ''
+
             logger.info(f"Processing user_request - {user_text}")
-            data = {
-                'userCommand': user_text,
-                'originalTweet': root_text if root_text != '' else user_text
-            }
+            if root_post and root_post.embed:
+                image_url = root_post.embed.images[0]['fullsize']
+                image_data = await self.process_and_upload_image(image_url)
+                data = {
+                    'userCommand': user_text,
+                    'originalTweet': root_text if root_text != '' else user_text,
+                    'mediaData': str(image_data)
+                }
+            else:
+                data = {
+                    'userCommand': user_text,
+                    'originalTweet': root_text if root_text != '' else user_text
+                }
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(

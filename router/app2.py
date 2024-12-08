@@ -358,7 +358,7 @@ class IntentRouter:
         if category == 'screenshot_research' and data.get('mediaData'):
             # For screenshot research, include media data
             payload['image'] = data['mediaData']
-            files = {"image": data['mediaData']}
+            files = {"image": (data['mediaData'],'image/jpeg')}
 
         elif category == 'persona_simulation':
             payload['original_tweet'] = data.get('originalTweet', '')
@@ -476,7 +476,7 @@ def process_mention():
 
     user_command = data['userCommand']
     original_tweet = data['originalTweet']
-    media_data = data.get('mediaData')
+    media_data = data['mediaData']
 
     # Route the instruction with media awareness
     route_name, confidence, django_response = router.route_instruction(
