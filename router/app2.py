@@ -350,7 +350,7 @@ class IntentRouter:
             'original_tweet': data.get('originalTweet', ''),
             'user_command': data.get('userCommand', ''),
             'metadata': {
-                'processed_at': None,  # You can add a timestamp if needed
+                'processed_at': None,
                 'category': category
             }
         }
@@ -358,9 +358,18 @@ class IntentRouter:
         # Special case handling for different categories
         files = None
         if category == 'screenshot_research' and data.get('mediaData'):
-            # For screenshot research, include media data
-            payload['image'] = data['mediaData']
-            files = {"image": (base64.b64decode(data['mediaData']).decode('utf-8'),'image/jpeg')}
+            try:
+                # Properly handle binary image data
+                image_data = base64.b64decode(data['mediaData'])
+                files = {
+                    'image': ('image.jpg', io.BytesIO(image_data), 'image/jpeg')
+                }
+            except Exception as e:
+                print(f"Error processing image data: {e}")
+                return {
+                    'error': 'Could not process image data',
+                    'details': str(e)
+                }
 
         elif category == 'persona_simulation':
             payload['original_tweet'] = data.get('originalTweet', '')
@@ -384,10 +393,13 @@ class IntentRouter:
 
         try:
             if files:
-                response = requests.post(url,files=files)
+                # For multipart/form-data requests with files
+                response = requests.post(url, files=files, data=payload)
             else:
+                # For JSON requests
                 response = requests.post(url, json=payload)
-            response.raise_for_status()  # Raise an exception for bad responses
+            
+            response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
             print(f"Error forwarding to Django: {e}")
@@ -484,7 +496,7 @@ def process_mention():
 
     user_command = data['userCommand']
     original_tweet = data['originalTweet']
-    media_data = str(data['mediaData'])
+    media_data = data.get('mediaData', '')
     print(user_command,original_tweet,media_data)
     # Route the instruction with media awareness
     route_name, confidence, django_response = router.route_instruction(
