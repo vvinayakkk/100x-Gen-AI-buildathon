@@ -1,95 +1,48 @@
 import os
 import json
-import schedule
-import time
-import threading
-from flask import Flask, jsonify
+import asyncio
+import logging
+from datetime import datetime
+import traceback
+
+from atproto import Client
 import numpy as np
 import pandas as pd
 import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from transformers import pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
-import nltk
-from nltk.sentiment import SentimentIntensityAnalyzer
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
-from flask import Flask, jsonify
-from flask_cors import CORS
-from atproto import Client
-import json
-from datetime import datetime
-import asyncio
-import logging
-# Replace LLMChain with a direct runnable sequence
-# chain = prompt | self.gemini_llm
-# result = chain.invoke({
-#     'texts': '\n'.join(texts[:10]),
-#     'category': category
-# })
 
-# Custom Logging Configuration
-def setup_logging():
-    log_dir = 'logs'
-    os.makedirs(log_dir, exist_ok=True)
-    
-    # Configure logging with timestamp in filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(log_dir, f'bluesky_poster_{timestamp}.log')
-    
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s: %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
-    return logging.getLogger(__name__)
-
-class AsyncBlueskyPoster:
-    def __init__(self, logger):
-        self.logger = logger
-        self.client = Client()
-        self.logger.info("AsyncBlueskyPoster initialized successfully")
+class TrendAnalyzer:
+    def __init__(self, logger=None):
+        """
+        Initialize TrendAnalyzer with logging and ML models
+        """
+        self.logger = logger or logging.getLogger(__name__)
         
-        # Initialize models and configurations
+        # Ensure directories exist
+        self.ensure_directories_exist()
+        
+        # Initialize models
         self._init_models()
 
-    def format_post(self, text, max_length=300):
-        """
-        Format post for Bluesky, ensuring it fits within character limit.
+    def ensure_directories_exist(self):
+        """Create necessary directories if they don't exist."""
+        directories = [
+            'logs', 
+            'data/trends', 
+            'analysis_results'
+        ]
         
-        Args:
-            text (str): The original text to be formatted
-            max_length (int): Maximum allowed length for the post
-        
-        Returns:
-            str: Formatted post text
-        """
-        # Remove extra whitespace
-        text = ' '.join(text.split())
-        
-        # Truncate if longer than max_length
-        if len(text) > max_length:
-            # Try to cut at a sentence boundary
-            sentences = text.split('. ')
-            truncated_text = ''
-            for sentence in sentences:
-                if len(truncated_text) + len(sentence) + 3 <= max_length:
-                    truncated_text += sentence + '. '
-                else:
-                    break
-            
-            # Trim and add ellipsis if needed
-            text = (truncated_text.strip() + '...').strip()[:max_length]
-        
-        return text
+        for directory in directories:
+            os.makedirs(directory, exist_ok=True)
 
     def _init_models(self):
-        """Initialize machine learning models and configurations."""
+        """Initialize machine learning models"""
         try:
             # Financial sentiment model
             self.financial_sentiment = pipeline(
@@ -101,14 +54,14 @@ class AsyncBlueskyPoster:
             # Gemini for advanced analysis
             self.gemini_llm = ChatGoogleGenerativeAI(
                 model="gemini-pro", 
-                google_api_key="AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE"  # Add your Google API key
+                google_api_key="AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE"  # Replace with your API key
             )
         except Exception as e:
             self.logger.error(f"Model initialization failed: {e}")
             raise
 
     def advanced_sentiment_analysis(self, texts):
-        """Advanced sentiment analysis."""
+        """Advanced sentiment analysis for given texts"""
         sentiments = []
         for text in texts:
             result = self.financial_sentiment(text)[0]
@@ -119,59 +72,14 @@ class AsyncBlueskyPoster:
             })
         
         sentiments_sorted = sorted(sentiments, key=lambda x: x['confidence'], reverse=True)
-        positive = [s for s in sentiments_sorted if s['sentiment'] == 'positive']
-        negative = [s for s in sentiments_sorted if s['sentiment'] == 'negative']
-        
         return {
-            'top_positive': positive[:5],
-            'top_negative': negative[:5],
+            'top_positive': [s for s in sentiments_sorted if s['sentiment'] == 'positive'][:5],
+            'top_negative': [s for s in sentiments_sorted if s['sentiment'] == 'negative'][:5],
             'total_analyzed': len(texts)
         }
 
-    async def analyze_trend_data(self, category):
-        """Async analysis for trend data."""
-        self.logger.info(f"Analyzing {category} trends")
-        
-        try:
-            # Read trend data from specific path
-            filepath = os.path.join('data', 'trends', f'{category}_trends.json')
-            
-            with open(filepath, 'r', encoding='utf-8') as f:
-                trend_data = json.load(f)
-            
-            # Prepare texts from top posts
-            texts = [post['text'] for post in trend_data.get('postMetrics', {}).get('topPosts', [])]
-            
-            if not texts:
-                self.logger.warning(f"No texts found for {category} trends")
-                return None
-            
-            # Perform analyses
-            sentiments = self.advanced_sentiment_analysis(texts)
-            topics = self._perform_topic_clustering(texts)
-            ai_insights = await self._generate_ai_insights(texts, category)
-            
-            trend_analysis = {
-                'topHashtags': trend_data.get('topHashtags', []),
-                'postMetrics': trend_data.get('postMetrics', {}),
-                'sentiment_analysis': sentiments,
-                'topic_clusters': topics,
-                'ai_insights': ai_insights
-            }
-            
-            # Save analysis result
-            output_file = os.path.join('analysis_results', f'{category}_trend_analysis.json')
-            with open(output_file, 'w', encoding='utf-8') as f:
-                json.dump(trend_analysis, f, indent=2)
-            
-            return trend_analysis
-        
-        except Exception as e:
-            self.logger.error(f"Error in {category} trend analysis: {e}")
-            return None
-
     def _perform_topic_clustering(self, texts):
-        """Perform topic clustering using TF-IDF and KMeans."""
+        """Perform topic clustering using TF-IDF and KMeans"""
         if not texts:
             return {'clusters': [], 'centroids': []}
         
@@ -187,21 +95,72 @@ class AsyncBlueskyPoster:
             'centroids': kmeans.cluster_centers_.tolist()
         }
 
-    async def _generate_ai_insights(self, texts, category):
-        """Generate AI insights using Gemini."""
+    def generate_ai_insights(self, texts, category):
+        """Generate AI insights using Gemini with category-specific prompts"""
         try:
-            prompt = PromptTemplate(
-                input_variables=['texts', 'category'],
-                template="""Analyze the following {category} trend texts and provide a concise, structured summary:
-                Key Trends: Identify the top 3 emerging trends
-                - Highlight most discussed subtopics
-                - Note overall sentiment direction
-                - Suggest potential future implications
+            prompts = {
+                'financial': PromptTemplate(
+                    input_variables=['texts'],
+                    template="""Analyze these financial market texts and provide:
+                    1. Current market sentiment and key financial trends
+                    2. Emerging investment opportunities
+                    3. Potential economic risks and challenges
+                    4. Sector-specific insights
+                    5. Short-term and long-term market outlook
+                    
+                    first generete the insights and then summarize them in a way that it is under 280 characters.
 
-                Format your response as a clear, readable text suitable for a social media post.
-                
-                Texts: {texts}"""
-            )
+                    Detailed Financial Texts: {texts}"""
+                ),
+                'crypto': PromptTemplate(
+                    input_variables=['texts'],
+                    template="""Analyze these cryptocurrency and blockchain texts and provide:
+                    1. Current cryptocurrency market trends
+                    2. Emerging blockchain technologies
+                    3. Regulatory landscape updates
+                    4. Potential investment strategies
+                    5. Market sentiment and volatility indicators
+                    
+                    Detailed Crypto Texts: {texts}
+                    
+                    first generete the insights and then summarize them in a way that it is under 280 characters.
+                    
+                    """
+
+                    
+                ),
+                'tech': PromptTemplate(
+                    input_variables=['texts'],
+                    template="""Analyze these technology industry texts and provide:
+                    1. Cutting-edge technological innovations
+                    2. Emerging tech trends
+                    3. Potential disruptive technologies
+                    4. Industry investment opportunities
+                    5. Impact of recent technological developments
+                    
+                    Detailed Tech Texts: {texts}
+                    
+                    first generete the insights and then summarize them in a way that it is under 280 characters.
+                    
+                    """
+                ),
+                'entertainment': PromptTemplate(
+                    input_variables=['texts'],
+                    template="""Analyze these entertainment industry texts and provide:
+                    1. Current entertainment trends
+                    2. Emerging content and media innovations
+                    3. Audience engagement insights
+                    4. Potential industry shifts
+                    5. Notable upcoming releases and developments
+                    
+                    first generete the insights and then summarize them in a way that it is under 280 characters.
+
+                    Detailed Entertainment Texts: {texts}"""
+                )
+            }
+
+            # Select the appropriate prompt based on category
+            prompt = prompts.get(category, prompts['tech'])
 
             chain = LLMChain(llm=self.gemini_llm, prompt=prompt)
             result = chain.run(
@@ -209,117 +168,286 @@ class AsyncBlueskyPoster:
                 category=category
             )
             
-            # Ensure result is a string
             return str(result)
         except Exception as e:
             self.logger.error(f"AI insights generation error for {category}: {e}")
             return f"Trending insights for {category}: Key developments observed"
 
-    async def generate_bluesky_post(self, analysis_result, category):
-        """Generate a Bluesky post from analysis results."""
-        if not analysis_result:
-            self.logger.warning(f"No analysis result for {category}")
+    def analyze_trend_data(self, category):
+        """Analyze trend data for a specific category"""
+        try:
+            # Load trend data
+            filepath = os.path.join('data', 'trends', f'{category}_trends.json')
+            
+            with open(filepath, 'r', encoding='utf-8') as f:
+                trend_data = json.load(f)
+            
+            # Extract texts from top posts
+            texts = [post['text'] for post in trend_data.get('postMetrics', {}).get('topPosts', [])]
+            
+            if not texts:
+                self.logger.warning(f"No texts found for {category} trends")
+                return None
+            
+            # Perform analyses
+            sentiments = self.advanced_sentiment_analysis(texts)
+            topics = self._perform_topic_clustering(texts)
+            
+            # Generate AI insights (synchronous for now)
+            ai_insights = self.generate_ai_insights(texts, category)
+            
+            # Prepare trend analysis
+            trend_analysis = {
+                'category': category,
+                'topHashtags': trend_data.get('topHashtags', []),
+                'postMetrics': trend_data.get('postMetrics', {}),
+                'sentiment_analysis': sentiments,
+                'topic_clusters': topics,
+                'ai_insights': ai_insights
+            }
+            
+            # Save analysis result
+            output_file = os.path.join('analysis_results', f'{category}_trend_analysis.json')
+            with open(output_file, 'w', encoding='utf-8') as f:
+                json.dump(trend_analysis, f, indent=2)
+            
+            self.logger.info(f"Analysis completed for {category}")
+            return trend_analysis
+        
+        except Exception as e:
+            self.logger.error(f"Error in {category} trend analysis: {e}")
+            traceback.print_exc()
             return None
 
+class BlueskyPoster:
+    def __init__(self, logger=None):
+        """Initialize Bluesky Poster"""
+        self.logger = logger or logging.getLogger(__name__)
+        self.client = Client()
+        
+        # Initialize Gemini for post generation
+        self.gemini_llm = ChatGoogleGenerativeAI(
+            model="gemini-pro", 
+            google_api_key="AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE"  # Replace with your API key
+        )
+
+    def format_post(self, text, max_length=300):
+        """Format post for Bluesky"""
+        text = ' '.join(text.split())
+        if len(text) > max_length:
+            sentences = text.split('. ')
+            truncated_text = ''
+            for sentence in sentences:
+                if len(truncated_text) + len(sentence) + 3 <= max_length:
+                    truncated_text += sentence + '. '
+                else:
+                    break
+            text = (truncated_text.strip() + '...').strip()[:max_length]
+        return text
+
+    def generate_post(self, analysis_file):
+        """Generate Bluesky post from trend analysis"""
         try:
-            # Predefined prompt templates
-            prompt_templates = {
-                'financial': """Analyze market trends and create a tweet-style market update (under 280 chars and above 200):
-                📈 Market Pulse: Provide a key financial insight
-                - Highlight 2-3 trending points using • separator
-                Focus on current market dynamics.""",
+            with open(analysis_file, 'r', encoding='utf-8') as f:
+                analysis_data = json.load(f)
+            
+            category = analysis_data['category']
+            insights = str(analysis_data.get('ai_insights', ''))
+            
+            # Robust sentiment handling
+            sentiments = analysis_data.get('sentiment_analysis', {})
+            top_sentiment = 'Recent trends'
+            
+            # Try multiple ways to extract a meaningful sentiment text
+            try:
+                # First, try the nested structure
+                if sentiments.get('top_positive'):
+                    top_sentiment = sentiments['top_positive'][0].get('text', top_sentiment)
                 
-                'tech': """Analyze tech trends and create a tweet-style tech update (under 280 chars and above 200):
-                🔮 Tech Watch: Share a key technology insight
-                - Highlight 2-3 hot tech topics using • separator
-                Focus on innovative trends.""",
-                
-                'crypto': """Analyze crypto trends and create a tweet-style crypto update (under 280 chars and above 200):
-                ₿ Crypto Update: Provide a key cryptocurrency insight
-                - Highlight 2-3 trending crypto points using • separator
-                Focus on market movements.""",
-                
-                'entertainment': """Analyze entertainment trends and create a tweet-style entertainment update (under 280 chars and above 200):
-                🎬 Entertainment Buzz: Share a key entertainment insight
-                - Highlight 2-3 trending entertainment topics using • separator
-                Focus on current pop culture trends."""
+                # If that fails, try a different approach
+                elif 'sentiment' in sentiments:
+                    top_sentiment = next(
+                        (item.get('text', top_sentiment) 
+                        for item in sentiments.get('sentiment', []) 
+                        if item.get('sentiment') == 'positive'),
+                        top_sentiment
+                    )
+            except Exception:
+                # If all else fails, use a generic trend text
+                pass
+            
+            # Safe hashtag handling
+            top_hashtags = analysis_data.get('topHashtags', [])
+            # Convert hashtags to strings and ensure they start with #
+            safe_hashtags = [f'#{tag}' if not str(tag).startswith('#') else str(tag) 
+                            for tag in top_hashtags[:2]]
+            default_hashtags = {
+                'financial': ['#Finance', '#Investment'],
+                'tech': ['#TechTrends', '#Innovation'],
+                'crypto': ['#Crypto', '#Blockchain'],
+                'entertainment': ['#EntertainmentNews', '#PopCulture']
             }
-
-            # Extract key information
-            insights = str(analysis_result.get('ai_insights', ''))
-            sentiment_analysis = analysis_result.get('sentiment_analysis', {})
-            top_hashtags = analysis_result.get('topHashtags', [])
             
-            # Prepare prompt
-            prompt = PromptTemplate(
-                input_variables=['insights', 'category'],
-                template=prompt_templates.get(category, prompt_templates['tech'])
+            # Use default hashtags if no hashtags found
+            hashtags = safe_hashtags if safe_hashtags else default_hashtags.get(category, ['#Trends'])
+            hashtag_string = ' '.join(hashtags)
+
+            # More robust prompt creation
+            emoji_map = {
+                'financial': '📈',
+                'tech': '🚀',
+                'crypto': '₿',
+                'entertainment': '🎬'
+            }
+            emoji = emoji_map.get(category, '✨')
+
+            # More distinctive prompts for each category
+            prompts = {
+                'financial': f"""{emoji} Financial Pulse: {top_sentiment}
+    - Market insights
+    - Investment snapshot
+    {hashtag_string}
+
+    Crisp market update.""",
+                
+                'tech': f"""{emoji} Tech Frontier: {top_sentiment}
+    - Innovation highlights
+    - Tech trend snapshot
+    {hashtag_string}
+
+    Cutting-edge insights.""",
+                
+                'crypto': f"""{emoji} Crypto Momentum: {top_sentiment}
+    - Blockchain updates
+    - Crypto market pulse
+    {hashtag_string}
+
+    Quick crypto insights.""",
+                
+                'entertainment': f"""{emoji} Entertainment Buzz: {top_sentiment}
+    - Pop culture highlights
+    - Trending entertainment
+    {hashtag_string}
+
+    What's hot right now."""
+            }
+            
+            # Fallback to a generic prompt if category not found
+            prompt = prompts.get(category, prompts['tech'])
+            
+            # Use Gemini to refine and format the post
+            prompt_template = PromptTemplate(
+                input_variables=['insights', 'prompt'],
+                template="""Refine this post to be engaging, informative, and within 280 characters:
+
+    Original Prompt: {prompt}
+
+    Additional Context: {insights}
+
+    Guideline:
+    - keep it under 200 characters
+    - Capture key insights
+    - Use an engaging tone
+    - Fit within character limit
+    - Maintain core message
+    - give the ai insights first and then summarize them in a way that it is under 200 characters.
+    - dont use bold or italic text in the post just normal text and emojies.
+    """
             )
-
-            # Use Gemini to generate a concise post
-            chain = LLMChain(llm=self.gemini_llm, prompt=prompt)
             
-            # Generate post with explicit string conversion
+            chain = LLMChain(llm=self.gemini_llm, prompt=prompt_template)
             post_text = chain.run({
                 'insights': insights,
-                'category': category
+                'prompt': prompt
             })
             
-            # Ensure post_text is a string
-            if not isinstance(post_text, str):
-                post_text = str(post_text)
+            # Ensure post is not empty and fits character limit
+            formatted_post = self.format_post(str(post_text))
             
-            return self.format_post(post_text)
+            # Additional check to prevent empty posts
+            if not formatted_post or len(formatted_post) < 10:
+                # Fallback to a generic post if generation fails
+                fallback_posts = {
+                    'financial': f"📈 Market pulse: Navigating financial landscapes with smart insights! {hashtag_string}",
+                    'tech': f"🚀 Tech frontier: Innovations reshaping our digital world! {hashtag_string}",
+                    'crypto': f"₿ Crypto chronicles: Blockchain breaking barriers! {hashtag_string}",
+                    'entertainment': f"🎬 Entertainment spotlight: Where creativity meets excitement! {hashtag_string}"
+                }
+                formatted_post = fallback_posts.get(category, fallback_posts['tech'])
+            
+            return formatted_post
+        
         except Exception as e:
-            self.logger.error(f"Post generation error for {category}: {e}")
-            # Log the full error details for debugging
-            import traceback
-            self.logger.error(traceback.format_exc())
+            self.logger.error(f"Post generation error: {e}")
+            traceback.print_exc()
             return None
 
-    async def post_to_bluesky(self, post):
-        """Post to Bluesky with error handling."""
+    def post_to_bluesky(self, post):
+        """Post to Bluesky"""
         if not post:
-            return
+            return False
         
         try:
-            self.client.login('smartbot.bsky.social', 'abcd@123')  # Add your Bluesky credentials
+
+            self.client.login('smartbot.bsky.social', 'abcd@123')
             self.client.send_post(text=post)
-            # self.logger.info(f"Posted to Bluesky: {post}")
+            return True
         except Exception as e:
             self.logger.error(f"Bluesky posting failed: {e}")
+            traceback.print_exc()
+            return False
 
-    async def run_analysis_and_post(self):
-        """Main async workflow for analysis and posting."""
-        categories = ['tech', 'finance', 'crypto', 'entertainment']
-        
-        try:
-            for category in categories:
-                analysis_result = await self.analyze_trend_data(category)
-                post = await self.generate_bluesky_post(analysis_result, category)
-                await self.post_to_bluesky(post)
+def setup_logging():
+    """Set up logging configuration"""
+    log_dir = 'logs'
+    os.makedirs(log_dir, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(log_dir, f'trend_poster_{timestamp}.log')
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s: %(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()
+        ]
+    )
+    return logging.getLogger(__name__)
+
+async def main():
+    """Main workflow"""
+    logger = setup_logging()
+    logger.info("Trend Analysis and Bluesky Poster Starting...")
+    
+    # Initialize components
+    trend_analyzer = TrendAnalyzer(logger)
+    bluesky_poster = BlueskyPoster(logger)
+    
+    # Categories to process
+    categories = ['finance', 'crypto', 'entertainment', 'tech']
+    
+    try:
+        # Analyze trends for each category
+        for category in categories:
+            # Analyze trend and save results
+            trend_analysis = trend_analyzer.analyze_trend_data(category)
+            
+            if trend_analysis:
+                # Generate Bluesky post from analysis
+                analysis_file = os.path.join('analysis_results', f'{category}_trend_analysis.json')
+                post = bluesky_poster.generate_post(analysis_file)
+                
+                # Post to Bluesky
+                if post:
+                    bluesky_poster.post_to_bluesky(post)
                 
                 # Add a small delay between posts
                 await asyncio.sleep(2)
-        
-        except Exception as e:
-            self.logger.error(f"Complete workflow error: {e}")
-
-async def main():
-    """Main async entry point."""
-    logger = setup_logging()
-    logger.info("Bluesky Auto Poster Daemon Starting...")
     
-    poster = AsyncBlueskyPoster(logger)
-    
-    while True:
-        try:
-            await poster.run_analysis_and_post()
-            # Run every 15 minutes
-            await asyncio.sleep(900)  # 15 * 60 seconds
-        except Exception as e:
-            logger.error(f"Daemon loop error: {e}")
-            await asyncio.sleep(60)  # Wait a minute before retry
+    except Exception as e:
+        logger.error(f"Workflow error: {e}")
+        traceback.print_exc()
 
 if __name__ == '__main__':
     asyncio.run(main())
