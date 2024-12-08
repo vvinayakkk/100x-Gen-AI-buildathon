@@ -407,7 +407,8 @@ class IntentRouter:
                 files = {
                     'image': ('image.jpg', io.BytesIO(image_data), 'image/jpeg')
                 }
-                res = requests.post(url, files=files)
+                url_ = f"{self.django_base_url}/api/analyze-image/"
+                res = requests.post(url_, files=files)
                 return res.json()
 
             return response.json()

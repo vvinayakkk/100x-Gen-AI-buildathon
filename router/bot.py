@@ -172,8 +172,14 @@ class BlueSkyBot:
                 return True
 
             elif category == "screenshot_research":
-                ai_texts = result['analysis']['analysis']
-
+                ai_texts = result.get('analysis',None)
+                if ai_texts:
+                    ai_texts = result['analysis']['analysis']
+                else:
+                    if result.get("ai_response","") == "":
+                        ai_texts = result["original_caption"]
+                    else:
+                        ai_texts = result["ai_response"]
                 reply_chunks = self.split_content_into_chunks(ai_texts)
                 for chunk in reply_chunks:
                     await self.reply_to_mention(mention, root_post, chunk)
