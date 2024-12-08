@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 
@@ -27,7 +28,8 @@ CATEGORIES = {
     'fact_checking': '/api/fact-check/',
     'sentiment_analysis': '/api/analyze-tweet/',
     'meme_generation': '/api/generate-meme/',
-    'tweet_helper': '/api/process-tweet/'
+    'tweet_helper': '/api/process-tweet/',
+    'picture_perfect': '/api/analyze-image/'
 }
 
 # Route Patterns (keep these for similarity backup)
@@ -358,7 +360,7 @@ class IntentRouter:
         if category == 'screenshot_research' and data.get('mediaData'):
             # For screenshot research, include media data
             payload['image'] = data['mediaData']
-            files = {"image": (data['mediaData'],'image/jpeg')}
+            files = {"image": (base64.b64decode(data['mediaData']).decode('utf-8'),'image/jpeg')}
 
         elif category == 'persona_simulation':
             payload['original_tweet'] = data.get('originalTweet', '')
@@ -405,7 +407,13 @@ class IntentRouter:
         """
         # Prioritize screenshot research if media is present
         if media_data:
-            return 'screenshot_research', 0.95
+            data = {
+                'userCommand': user_command,
+                'originalTweet': original_tweet or '',
+                'mediaData': media_data
+            }
+            django_response = self.forward_to_django('screenshot_research', data)
+            return 'screenshot_research', 0.95, django_response
 
         # Prepare context-aware classification
         context = original_tweet or ""
@@ -476,8 +484,8 @@ def process_mention():
 
     user_command = data['userCommand']
     original_tweet = data['originalTweet']
-    media_data = data['mediaData']
-
+    media_data = str(data['mediaData'])
+    print(user_command,original_tweet,media_data)
     # Route the instruction with media awareness
     route_name, confidence, django_response = router.route_instruction(
         user_command,

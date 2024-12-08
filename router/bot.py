@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import os
 from typing import List
@@ -81,12 +82,12 @@ class BlueSkyBot:
 
             logger.info(f"Processing user_request - {user_text}")
             if root_post and root_post.embed:
-                image_url = root_post.embed.images[0]['fullsize']
+                image_url = root_post.embed.images[0]['thumb']
                 image_data = await self.process_and_upload_image(image_url)
                 data = {
                     'userCommand': user_text,
                     'originalTweet': root_text if root_text != '' else user_text,
-                    'mediaData': str(image_data)
+                    'mediaData': str(base64.b64encode(image_data).decode('utf-8'))
                 }
             else:
                 data = {
@@ -172,7 +173,7 @@ class BlueSkyBot:
                 return True
 
             elif category == "screenshot_research":
-                ai_texts = result.get('analysis', {}).get('analysis', {})
+                ai_texts = result['analysis']['analysis']
 
                 reply_chunks = self.split_content_into_chunks(ai_texts)
                 for chunk in reply_chunks:
