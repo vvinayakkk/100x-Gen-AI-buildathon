@@ -1,21 +1,28 @@
 import os
 import json
-import asyncio
-import logging
-from datetime import datetime
+import schedule
+import time
+import threading
+from flask import Flask, jsonify
 import numpy as np
 import pandas as pd
 import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from transformers import pipeline
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
+from flask import Flask, jsonify
+from flask_cors import CORS
 from atproto import Client
-from langchain_core.runnables import RunnableSequence
-from langchain_core.prompts import PromptTemplate
-
+import json
+from datetime import datetime
+import asyncio
+import logging
 # Replace LLMChain with a direct runnable sequence
 # chain = prompt | self.gemini_llm
 # result = chain.invoke({

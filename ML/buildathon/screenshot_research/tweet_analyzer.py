@@ -56,8 +56,8 @@ class TweetAnalyzer:
             5. Any relevant context or background information
             6. Potential implications or significance
             7. give me a suggested reply based on thread (make another section for this)
-            
-            Tweet content: {tweet_text}
+            Dont give in markdown strictly, remove all *,\n, and all such things
+            Tweet content: {tweet_text} 
 
             Provide the analysis in a clear, structured format.
             """
