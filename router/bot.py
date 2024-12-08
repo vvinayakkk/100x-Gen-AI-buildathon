@@ -98,10 +98,9 @@ class BlueSkyBot:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{os.getenv('API_MIDDLEWARE')}/process-mention",
-                    json=data
+                    json=data,timeout=120
                 )
                 response_data = response.json()
-
             return await self.handle_response_category(response_data, mention, root_post)
 
         except Exception as e:

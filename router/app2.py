@@ -1,4 +1,5 @@
 import base64
+import io
 import os
 import re
 
@@ -497,7 +498,6 @@ def process_mention():
     user_command = data['userCommand']
     original_tweet = data['originalTweet']
     media_data = data.get('mediaData', '')
-    print(user_command,original_tweet,media_data)
     # Route the instruction with media awareness
     route_name, confidence, django_response = router.route_instruction(
         user_command,
