@@ -177,7 +177,10 @@ class BlueSkyBot:
                     ai_texts = result['analysis']['analysis']
                 else:
                     if result.get("ai_response","") == "":
-                        ai_texts = result["original_caption"]
+                        if result.get("original_caption","") == "":
+                            ai_texts = "Wow! you got me, I don't have any response"
+                        else:
+                            ai_texts = result["original_caption"]
                     else:
                         ai_texts = result["ai_response"]
                 reply_chunks = self.split_content_into_chunks(ai_texts)
