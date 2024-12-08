@@ -401,6 +401,15 @@ class IntentRouter:
                 response = requests.post(url, json=payload)
             
             response.raise_for_status()
+
+            if category == 'screenshot_research' and response.json().get('analysis') == None:
+                image_data = base64.b64decode(data['mediaData'])
+                files = {
+                    'image': ('image.jpg', io.BytesIO(image_data), 'image/jpeg')
+                }
+                res = requests.post(url, files=files)
+                return res.json()
+
             return response.json()
         except requests.RequestException as e:
             print(f"Error forwarding to Django: {e}")
@@ -505,7 +514,6 @@ def process_mention():
         media_data
     )
 
-    # Prepare response matching previous router's structure
     response = {
         'success': True,
         'category': route_name,
