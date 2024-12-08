@@ -50,16 +50,10 @@ class TweetAnalyzer:
             template="""
             Analyze this tweet content and provide:
             1. A concise summary
-            2. Main topics discussed
-            3. Key points and insights
-            4. Sentiment and tone
-            5. Any relevant context or background information
-            6. Potential implications or significance
-            7. give me a suggested reply based on thread (make another section for this)
-            Dont give in markdown strictly, remove all *,\n, and all such things
+            keep it informative only relevant to the tweet, make sure not to give markdown format strictly
             Tweet content: {tweet_text} 
 
-            Provide the analysis in a clear, structured format.
+            Provide the analysis in a clear, structured format not in markdown normal text without any markdown.
             """
         )
 
@@ -73,7 +67,8 @@ class TweetAnalyzer:
             4. Any dates or timestamps mentioned
             5. Any locations mentioned
             6. Any organizations referenced
-
+            Keep it as concised as possible to minimum response
+            keep it informative only relevant to the tweet, make sure not to give markdown format strictly
             Tweet content: {tweet_text}
 
             Format the response as a structured list of findings.
