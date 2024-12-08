@@ -512,6 +512,57 @@ def parse_text_to_facets(text) :
             text_builder.text(text[last_index:])
 
         return text_builder
+async def run_workflow_periodically():
+    """Run the main workflow periodically every 10 minutes"""
+    logger = setup_logging()
+    logger.info("Starting periodic Trend Analysis and Bluesky Poster...")
+    
+    while True:
+        try:
+            # Initialize components
+            trend_analyzer = TrendAnalyzer(logger)
+            bluesky_poster = BlueskyPoster(logger)
+            
+            # Categories to process
+            categories = ['finance', 'crypto', 'entertainment', 'tech']
+            
+            # Analyze trends for each category
+            for category in categories:
+                # Analyze trend and save results
+                trend_analysis = trend_analyzer.analyze_trend_data(category)
+                
+                if trend_analysis:
+                    # Generate Bluesky post from analysis
+                    analysis_file = os.path.join('analysis_results', f'{category}_trend_analysis.json')
+                    post = bluesky_poster.generate_post(analysis_file)
+                    
+                    # Post to Bluesky
+                    if post:
+                        bluesky_poster.post_to_bluesky(post)
+                    
+                    # Add a small delay between posts
+                    await asyncio.sleep(2)
+            
+            # Log the completion of a workflow cycle
+            logger.info("Workflow cycle completed. Waiting for next cycle...")
+            
+            # Wait for 10 minutes before next run
+            await asyncio.sleep(900)  # 600 seconds = 10 minutes
+        
+        except Exception as e:
+            logger.error(f"Periodic workflow error: {e}")
+            traceback.print_exc()
+            
+            # Wait 10 minutes even if an error occurs
+            await asyncio.sleep(900)
+
+async def main():
+    """Main entry point with periodic workflow"""
+    # Create a task for the periodic workflow
+    workflow_task = asyncio.create_task(run_workflow_periodically())
+    
+    # Wait indefinitely to keep the script running
+    await workflow_task
 
 if __name__ == '__main__':
     asyncio.run(main())
