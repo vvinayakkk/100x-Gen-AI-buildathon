@@ -212,11 +212,11 @@ class BlueSkyBot:
             reply_to_parent = models.create_strong_ref(mention)
 
             if image_embed:
-                await self.client.send_image(image_alt=reply_text, image=image_embed, text=reply_text,
+                await self.client.send_image(image_alt=reply_text, image=image_embed, text=self.parse_text_to_facets(reply_text),
                                              reply_to=models.AppBskyFeedPost.ReplyRef(parent=reply_to_parent,
                                                                                       root=reply_to_root))
             else:
-                await self.client.send_post(text=client_utils.TextBuilder().text(reply_text),
+                await self.client.send_post(text=self.parse_text_to_facets(reply_text),
                                             reply_to=models.AppBskyFeedPost.ReplyRef(parent=reply_to_parent,
                                                                                      root=reply_to_root))
             logger.info('Successfully replied to mention')
@@ -284,7 +284,7 @@ class BlueSkyBot:
             await self.check_mentions()
             await asyncio.sleep(30)
 
-    def parse_text_to_facets(text: str) -> client_utils.TextBuilder:
+    def parse_text_to_facets(self,text) :
         """
         Parse a string and automatically create appropriate facets for mentions, links, and tags.
 
