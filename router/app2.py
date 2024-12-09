@@ -358,7 +358,7 @@ class IntentRouter:
 
         # Special case handling for different categories
         files = None
-        if category == 'screenshot_research' and data.get('mediaData'):
+        if category == 'screenshot_research' and data.get('mediaData') != '':
             try:
                 # Properly handle binary image data
                 image_data = base64.b64decode(data['mediaData'])
@@ -430,7 +430,7 @@ class IntentRouter:
         :return: Tuple of (route_name, confidence)
         """
         # Prioritize screenshot research if media is present
-        if media_data:
+        if media_data != '':
             data = {
                 'userCommand': user_command,
                 'originalTweet': original_tweet or '',
@@ -530,7 +530,7 @@ def process_mention():
     }
 
     # If media is present, include it in the response
-    if media_data:
+    if media_data != '':
         response['mediaData'] = media_data
 
     return jsonify(response)
@@ -545,4 +545,4 @@ def initialize_router(api_key):
 if __name__ == '__main__':
     # Example initialization (replace with your actual API key)
     initialize_router(os.getenv('GEMINI_KEY'))
-    app.run(host='0.0.0.0',debug=True, port=5000)
+    app.run(host='0.0.0.0', port=5000)

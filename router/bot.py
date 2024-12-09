@@ -83,7 +83,7 @@ class BlueSkyBot:
 
             logger.info(f"Processing user_request - {user_text}")
             if root_post and root_post.embed:
-                if isinstance(root_post.embed, dict) and 'images' in root_post.embed:
+                if root_post.embed.images:
                     image_url = root_post.embed.images[0]['thumb']
                     image_data = await self.process_and_upload_image(image_url)
                     data = {
@@ -98,7 +98,7 @@ class BlueSkyBot:
                     }
             else:
                 if mention_post.embed:
-                    if isinstance(mention_post.embed,dict) and 'images' in mention_post.embed:
+                    if root_post.embed.images:
                         image_url = mention_post.embed.images[0]['thumb']
                         image_data = await self.process_and_upload_image(image_url)
                         data = {
