@@ -1,22 +1,20 @@
-import os
-import json
 import asyncio
+import json
 import logging
+import os
 import re
-from datetime import datetime
 import traceback
+from datetime import datetime
 
-from atproto import Client,client_utils
-import numpy as np
-import pandas as pd
-import torch
-from transformers import pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
-
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
+from atproto import Client, client_utils, models
+from atproto_client.models.app.bsky.feed.post import ReplyRef
 from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
+from transformers import pipeline
+
 
 class TrendAnalyzer:
     def __init__(self, logger=None):
@@ -157,7 +155,7 @@ class TrendAnalyzer:
             # Select the appropriate prompt based on category
             # Modified to handle variations in input and provide a fallback
             normalized_category = category.lower().strip()
-            
+
             # Mapping to handle potential variations
             category_map = {
                 'finance': 'financial',
@@ -168,10 +166,10 @@ class TrendAnalyzer:
                 'entertainment': 'entertainment',
                 'media': 'entertainment'
             }
-            
+
             # Get the standardized category or fallback to a default
             standard_category = category_map.get(normalized_category, 'tech')
-            
+
             # Select prompt, with tech as the ultimate fallback
             prompt = prompts.get(standard_category, prompts['tech'])
 
@@ -231,6 +229,7 @@ class TrendAnalyzer:
             traceback.print_exc()
             return None
 
+
 class BlueskyPoster:
     def __init__(self, logger=None):
         """Initialize Bluesky Poster"""
@@ -257,6 +256,27 @@ class BlueskyPoster:
             text = (truncated_text.strip() + '...').strip()[:max_length]
         return text
 
+    def split_content_into_chunks(self, content: str, max_length: int = 299):
+        """Split content into chunks that fit Bluesky's character limit"""
+        # Use regex to split sentences more robustly
+        import re
+        sentences = re.split(r'(?<=[.!?])\s+', content)
+        chunks = []
+        current_chunk = ''
+
+        for sentence in sentences:
+            if len(current_chunk + sentence) <= max_length:
+                current_chunk += sentence + ' '
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                current_chunk = sentence[:max_length]
+
+        if current_chunk:
+            chunks.append(current_chunk.strip())
+
+        return list(reversed(chunks))
+
     def generate_post(self, analysis_file):
         """Generate Bluesky post from trend analysis"""
         try:
@@ -265,10 +285,10 @@ class BlueskyPoster:
 
             category = analysis_data['category']
             insights = str(analysis_data.get('ai_insights', ''))
-            
+
             # Clean up hashtags
             top_hashtags = analysis_data.get('topHashtags', [])
-            
+
             # Ensure hashtags are clean strings
             safe_hashtags = []
             for tag in top_hashtags:
@@ -281,10 +301,10 @@ class BlueskyPoster:
                 # If tag is already a string, just ensure it starts with #
                 elif isinstance(tag, str):
                     safe_hashtags.append(f'#{tag}' if not tag.startswith('#') else tag)
-            
+
             # Limit to 2 hashtags
             safe_hashtags = safe_hashtags[:2]
-            
+
             # Fallback hashtags if no safe hashtags found
             default_hashtags = {
                 'financial': ['#Finance', '#Investment'],
@@ -292,13 +312,13 @@ class BlueskyPoster:
                 'crypto': ['#Crypto', '#Blockchain'],
                 'entertainment': ['#EntertainmentNews', '#PopCulture']
             }
-            
+
             # Use safe hashtags or default hashtags
             hashtags = safe_hashtags if safe_hashtags else default_hashtags.get(category, ['#Trends'])
             hashtag_string = ' '.join(hashtags)
 
             # Rest of the method remains the same...
-            
+
             # Robust prompt template
             prompts = {
                 'financial': f"📈 Financial Pulse: Market insights and investment snapshot. {hashtag_string}",
@@ -336,19 +356,19 @@ class BlueskyPoster:
             })
 
             # Ensure post is not empty and fits character limit
-            formatted_post = self.format_post(str(post_text))
-            
-            # Additional fallback for empty posts
-            if not formatted_post or len(formatted_post) < 10:
-                fallback_posts = {
-                    'financial': f"📈 Market pulse: Strategic insights for smart investors! {hashtag_string}",
-                    'tech': f"🚀 Tech world: Innovations shaping our digital future! {hashtag_string}",
-                    'crypto': f"₿ Crypto insights: Blockchain breaking new ground! {hashtag_string}",
-                    'entertainment': f"🎬 Entertainment spotlight: Creativity meets excitement! {hashtag_string}"
-                }
-                formatted_post = fallback_posts.get(category, fallback_posts['tech'])
+            # formatted_post = self.format_post(str(post_text))
+            #
+            # # Additional fallback for empty posts
+            # if not formatted_post or len(formatted_post) < 10:
+            #     fallback_posts = {
+            #         'financial': f"📈 Market pulse: Strategic insights for smart investors! {hashtag_string}",
+            #         'tech': f"🚀 Tech world: Innovations shaping our digital future! {hashtag_string}",
+            #         'crypto': f"₿ Crypto insights: Blockchain breaking new ground! {hashtag_string}",
+            #         'entertainment': f"🎬 Entertainment spotlight: Creativity meets excitement! {hashtag_string}"
+            #     }
+            #     formatted_post = fallback_posts.get(category, fallback_posts['tech'])
 
-            return formatted_post
+            return self.split_content_into_chunks(post_text)
 
         except Exception as e:
             self.logger.error(f"Post generation error: {e}")
@@ -363,12 +383,28 @@ class BlueskyPoster:
         try:
 
             self.client.login('smartbot.bsky.social', 'abcd@123')
-            self.client.send_post(text=parse_text_to_facets(post))
+            previous_post_ref = None
+            root_post = None
+            parent_post = None
+            for post_text in post:
+                if root_post is None:
+                    root_post = models.create_strong_ref(self.client.send_post(
+                        text=parse_text_to_facets(post_text),
+                    ))
+                    parent_post = root_post
+                else:
+                    parent_post = models.create_strong_ref(self.client.send_post(
+                        text=parse_text_to_facets(post_text),
+                        reply_to=models.AppBskyFeedPost.ReplyRef(parent=parent_post, root=root_post)
+                    ))
+                self.logger.info(f"Posted: {post_text}")
+            # self.client.send_post(text=parse_text_to_facets(post))
             return True
         except Exception as e:
             self.logger.error(f"Bluesky posting failed: {e}")
             traceback.print_exc()
             return False
+
 
 def setup_logging():
     """Set up logging configuration"""
@@ -387,6 +423,7 @@ def setup_logging():
         ]
     )
     return logging.getLogger(__name__)
+
 
 async def main():
     """Main workflow"""
@@ -422,119 +459,124 @@ async def main():
         logger.error(f"Workflow error: {e}")
         traceback.print_exc()
 
-def parse_text_to_facets(text) :
-        """
-        Parse a string and automatically create appropriate facets for mentions, links, and tags.
 
-        Args:
-            text (str): Input text to parse and create facets for
+def parse_text_to_facets(text):
+    """
+    Parse a string and automatically create appropriate facets for mentions, links, and tags.
 
-        Returns:
-            client_utils.TextBuilder: TextBuilder object with detected facets
-        """
-        # Initialize TextBuilder
-        text_builder = client_utils.TextBuilder()
+    Args:
+        text (str): Input text to parse and create facets for
 
-        # Regular expressions for detection
-        mention_pattern = r'@(\w+)'
-        url_pattern = r'https?://\S+'
-        tag_pattern = r'#(\w+)'
+    Returns:
+        client_utils.TextBuilder: TextBuilder object with detected facets
+    """
+    # Initialize TextBuilder
+    text_builder = client_utils.TextBuilder()
 
-        # Keep track of last processed index to handle overlapping matches
-        last_index = 0
+    # Regular expressions for detection
+    mention_pattern = r'@(\w+)'
+    url_pattern = r'https?://\S+'
+    tag_pattern = r'#(\w+)'
 
-        # Find all matches
-        all_matches = []
+    # Keep track of last processed index to handle overlapping matches
+    last_index = 0
 
-        # Collect mentions
-        for match in re.finditer(mention_pattern, text):
-            all_matches.append(('mention', match))
+    # Find all matches
+    all_matches = []
 
-        # Collect URLs
-        for match in re.finditer(url_pattern, text):
-            all_matches.append(('link', match))
+    # Collect mentions
+    for match in re.finditer(mention_pattern, text):
+        all_matches.append(('mention', match))
 
-        # Collect tags
-        for match in re.finditer(tag_pattern, text):
-            all_matches.append(('tag', match))
+    # Collect URLs
+    for match in re.finditer(url_pattern, text):
+        all_matches.append(('link', match))
 
-        # Sort matches by their start index
-        all_matches.sort(key=lambda x: x[1].start())
+    # Collect tags
+    for match in re.finditer(tag_pattern, text):
+        all_matches.append(('tag', match))
 
-        # Process matches
-        for match_type, match in all_matches:
-            # Add text before the match
-            if match.start() > last_index:
-                text_builder.text(text[last_index:match.start()])
+    # Sort matches by their start index
+    all_matches.sort(key=lambda x: x[1].start())
 
-            # Add the matched content with appropriate facet
-            if match_type == 'mention':
-                # Assumes a did lookup or placeholder - in real world, you'd want to resolve the DID
-                text_builder.mention(match.group(1), f'did:placeholder:{match.group(1)}')
-            elif match_type == 'link':
-                text_builder.link(match.group(0), match.group(0))
-            elif match_type == 'tag':
-                text_builder.tag(f'#{match.group(1)}', match.group(1))
+    # Process matches
+    for match_type, match in all_matches:
+        # Add text before the match
+        if match.start() > last_index:
+            text_builder.text(text[last_index:match.start()])
 
-            # Update last processed index
-            last_index = match.end()
+        # Add the matched content with appropriate facet
+        if match_type == 'mention':
+            # Assumes a did lookup or placeholder - in real world, you'd want to resolve the DID
+            text_builder.mention(match.group(1), f'did:placeholder:{match.group(1)}')
+        elif match_type == 'link':
+            text_builder.link(match.group(0), match.group(0))
+        elif match_type == 'tag':
+            text_builder.tag(f'#{match.group(1)}', match.group(1))
 
-        # Add any remaining text
-        if last_index < len(text):
-            text_builder.text(text[last_index:])
+        # Update last processed index
+        last_index = match.end()
 
-        return text_builder
+    # Add any remaining text
+    if last_index < len(text):
+        text_builder.text(text[last_index:])
+
+    return text_builder
+
+
 async def run_workflow_periodically():
     """Run the main workflow periodically every 10 minutes"""
     logger = setup_logging()
     logger.info("Starting periodic Trend Analysis and Bluesky Poster...")
-    
+
     while True:
         try:
             # Initialize components
             trend_analyzer = TrendAnalyzer(logger)
             bluesky_poster = BlueskyPoster(logger)
-            
+
             # Categories to process
             categories = ['finance', 'crypto', 'entertainment', 'tech']
-            
+
             # Analyze trends for each category
             for category in categories:
                 # Analyze trend and save results
                 trend_analysis = trend_analyzer.analyze_trend_data(category)
-                
+
                 if trend_analysis:
                     # Generate Bluesky post from analysis
                     analysis_file = os.path.join('analysis_results', f'{category}_trend_analysis.json')
                     post = bluesky_poster.generate_post(analysis_file)
-                    
+
                     # Post to Bluesky
                     if post:
                         bluesky_poster.post_to_bluesky(post)
-                    
+
                     # Add a small delay between posts
                     await asyncio.sleep(2)
-            
+
             # Log the completion of a workflow cycle
             logger.info("Workflow cycle completed. Waiting for next cycle...")
-            
+
             # Wait for 10 minutes before next run
             await asyncio.sleep(900)  # 600 seconds = 10 minutes
-        
+
         except Exception as e:
             logger.error(f"Periodic workflow error: {e}")
             traceback.print_exc()
-            
+
             # Wait 10 minutes even if an error occurs
             await asyncio.sleep(900)
+
 
 async def main():
     """Main entry point with periodic workflow"""
     # Create a task for the periodic workflow
     workflow_task = asyncio.create_task(run_workflow_periodically())
-    
+
     # Wait indefinitely to keep the script running
     await workflow_task
+
 
 if __name__ == '__main__':
     asyncio.run(main())
