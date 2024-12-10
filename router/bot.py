@@ -256,7 +256,7 @@ class BlueSkyBot:
             # Filter unread mentions
             mentions = [
                 notif for notif in notifications.notifications
-                if notif.reason == 'mention' and not notif.is_read
+                if (notif.reason == 'mention' or notif.reason == 'reply') and not notif.is_read
             ]
 
             if not mentions:
