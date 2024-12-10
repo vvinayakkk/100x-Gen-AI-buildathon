@@ -124,7 +124,7 @@ class TrendAnalyzer:
                     
                     Detailed Crypto Texts: {texts}
                     
-                    first generete the insights and then summarize them in a way that it is under 280 characters."""
+                    first generate the insights and then summarize them in a way that it is under 280 characters."""
                 ),
                 'tech': PromptTemplate(
                     input_variables=['texts'],
