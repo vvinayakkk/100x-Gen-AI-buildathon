@@ -275,7 +275,7 @@ class BlueskyPoster:
         if current_chunk:
             chunks.append(current_chunk.strip())
 
-        return list(reversed(chunks))
+        return list(chunks)
 
     def generate_post(self, analysis_file):
         """Generate Bluesky post from trend analysis"""
