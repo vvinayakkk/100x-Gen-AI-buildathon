@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import logging
 from typing import Dict, List, Any
 import asyncio
 import aiofiles
@@ -11,8 +12,33 @@ from dotenv import load_dotenv
 from atproto import AsyncClient, models
 
 
+# Configure logging
+def setup_logging():
+    # Create logs directory if it doesn't exist
+    log_dir = os.path.join(os.path.dirname(__file__), 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+
+    # Configure logging to write to both console and file
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(os.path.join(log_dir, 'bluesky_crawler.log')),
+            logging.StreamHandler()
+        ]
+    )
+    return logging.getLogger(__name__)
+
+
+# Global logger
+logger = setup_logging()
+
+
 class BlueskyAdvancedCrawler:
     def __init__(self):
+        # Log initialization start
+        logger.info("Initializing BlueskyAdvancedCrawler")
+
         # Load environment variables
         load_dotenv()
 
@@ -21,6 +47,7 @@ class BlueskyAdvancedCrawler:
 
         # Define base data store path
         base_path = os.path.join(os.path.dirname(__file__), 'data')
+        logger.info(f"Base data path set to: {base_path}")
 
         # Optimized categories structure
         self.categories = {
@@ -35,30 +62,37 @@ class BlueskyAdvancedCrawler:
                 'entertainment': os.path.join(base_path, 'trends', 'entertainment_trends.json')
             }
         }
+        logger.info("Categories and paths configured successfully")
 
     async def authenticate(self):
         """Authenticate with Bluesky"""
         try:
+            logger.info("Attempting to authenticate with Bluesky")
             await self.client.login(
                 os.getenv('BLUESKY_HANDLE'),
                 os.getenv('BLUESKY_PASSWORD')
             )
-            print('Authenticated successfully')
+            logger.info('Authentication successful')
         except Exception as e:
-            print(f'Authentication failed: {e}')
+            logger.error(f'Authentication failed: {e}')
             raise
 
     @staticmethod
     def extract_hashtags(text: str) -> List[str]:
         """Extract unique hashtags from text"""
-        return list(set(re.findall(r'#(\w+)', text)))
+        hashtags = list(set(re.findall(r'#(\w+)', text)))
+        logger.debug(f"Extracted {len(hashtags)} unique hashtags from text")
+        return hashtags
 
-    async def search_posts(self, search_term: str, limit: int = 50) -> List[Dict[str, Any]]:
+    async def search_posts(self, search_term: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Async method to search posts with error handling"""
+        logger.info(f"Searching posts for term: {search_term}")
         try:
             # Use app.bsky.feed.searchPosts method from atproto
-            results = await self.client.app.bsky.feed.search_posts({"q":search_term,"limit":limit})
-            return [
+            results = await self.client.app.bsky.feed.search_posts({"q": search_term, "limit": limit})
+            logger.info(f"Found {len(results.posts)} posts for term: {search_term}")
+
+            processed_posts = [
                 {
                     'text': post.record.text,
                     'created_at': post.record.created_at,
@@ -67,12 +101,15 @@ class BlueskyAdvancedCrawler:
                 }
                 for post in results.posts
             ]
+            logger.debug(f"Processed {len(processed_posts)} posts")
+            return processed_posts
         except Exception as e:
-            print(f'Search error for {search_term}: {e}')
+            logger.error(f'Search error for {search_term}: {e}')
             return []
 
     async def crawl_financial_content(self):
         """Comprehensive financial content crawler with async operations"""
+        logger.info("Starting financial content crawl")
         search_terms = {
             'stocks': ['stocks', 'finance', 'investment', 'market', 'trading'],
             'crypto': ['bitcoin', 'ethereum', 'crypto', 'blockchain'],
@@ -101,6 +138,7 @@ class BlueskyAdvancedCrawler:
                 search_tasks.append(self.search_posts(term))
 
         # Collect results from all search tasks
+        logger.info(f"Gathering results from {len(search_tasks)} search tasks")
         search_results = await asyncio.gather(*search_tasks)
 
         # Process and categorize posts
@@ -116,17 +154,20 @@ class BlueskyAdvancedCrawler:
                 if 'crypto' in post['text'].lower():
                     all_posts['crypto_news'].append(post)
 
+        logger.info("Finished crawling financial content")
         await self.save_posts(all_posts)
         await self.analyze_trends()
 
     def _get_all_file_paths(self):
         """Recursively extract all file paths from the categories dictionary"""
+        logger.debug("Extracting all file paths from categories")
         paths = []
         for value in self.categories.values():
             if isinstance(value, str):
                 paths.append(value)
             elif isinstance(value, dict):
                 paths.extend(self._get_dict_paths(value))
+        logger.info(f"Found {len(paths)} file paths")
         return paths
 
     def _get_dict_paths(self, d):
@@ -141,37 +182,66 @@ class BlueskyAdvancedCrawler:
 
     async def save_posts(self, posts: Dict[str, List[Dict[str, Any]]]):
         """Async post saving with error handling"""
+        logger.info("Starting to save posts")
+
         # Create directories if they don't exist
         all_paths = self._get_all_file_paths()
         for path in [os.path.dirname(file_path) for file_path in all_paths]:
             os.makedirs(path, exist_ok=True)
+            logger.debug(f"Ensuring directory exists: {path}")
 
         async def save_category(category, data):
             try:
                 async with aiofiles.open(self.categories[category], 'w') as f:
                     await f.write(json.dumps(data, indent=2))
-                print(f'Saved {len(data)} {category} posts')
+                logger.info(f'Saved {len(data)} {category} posts')
             except Exception as e:
-                print(f'Error saving {category} posts: {e}')
+                logger.error(f'Error saving {category} posts: {e}')
 
         # Use asyncio.gather for concurrent file writes
         await asyncio.gather(
             *[save_category(category, data) for category, data in posts.items() if data]
         )
+        logger.info("Completed saving posts for all categories")
 
     async def analyze_trends(self):
         """Advanced trend analysis with async processing"""
+        logger.info("Starting trend analysis")
         trend_categories = {
-            'tech': ['ai', 'technology', 'startup'],
-            'finance': ['investing', 'market', 'stocks'],
-            'crypto': ['blockchain', 'bitcoin', 'ethereum'],
-            'entertainment': ['movies', 'streaming', 'entertainment']
+            'tech': [
+                'ai', 'technology', 'startup',
+                'machine learning', 'cloud computing',
+                'cybersecurity', 'robotics',
+                'quantum computing', 'virtual reality',
+                'augmented reality', 'internet of things'
+            ],
+            'finance': [
+                'investing', 'market', 'stocks',
+                'cryptocurrency', 'fintech',
+                'trading', 'mutual funds',
+                'venture capital', 'derivatives',
+                'bonds', 'portfolio management'
+            ],
+            'crypto': [
+                'blockchain', 'bitcoin', 'ethereum',
+                'defi', 'nft', 'altcoins',
+                'smart contracts', 'crypto mining',
+                'decentralized finance', 'web3',
+                'digital wallet', 'token economics'
+            ],
+            'entertainment': [
+                'movies', 'streaming', 'entertainment',
+                'gaming', 'esports', 'podcasts',
+                'social media', 'virtual concerts',
+                'content creation', 'streaming platforms',
+                'digital media', 'interactive entertainment'
+            ]
         }
-
         trend_analysis = {}
 
         # Async trend search and analysis
         for category, terms in trend_categories.items():
+            logger.info(f"Analyzing trends for category: {category}")
             trend_tasks = [self.search_posts(term) for term in terms]
             search_results = await asyncio.gather(*trend_tasks)
 
@@ -224,6 +294,7 @@ class BlueskyAdvancedCrawler:
                 }
             }
 
+        logger.info("Completed trend analysis")
         await self.save_trend_analysis(trend_analysis)
         return trend_analysis
 
@@ -231,22 +302,25 @@ class BlueskyAdvancedCrawler:
         """Save trend analysis results"""
         trend_store_path = os.path.join(os.path.dirname(self.categories['trends']['tech']), 'analysis')
         os.makedirs(trend_store_path, exist_ok=True)
+        logger.info(f"Trend analysis store path: {trend_store_path}")
 
         async def save_category(category, data):
             try:
                 async with aiofiles.open(self.categories['trends'][category], 'w') as f:
                     await f.write(json.dumps(data, indent=2))
-                print(f'Saved trend analysis for {category}')
+                logger.info(f'Saved trend analysis for {category}')
             except Exception as e:
-                print(f'Error saving {category} trend data: {e}')
+                logger.error(f'Error saving {category} trend data: {e}')
 
         # Save all trend categories concurrently
         await asyncio.gather(
             *[save_category(category, data) for category, data in trend_data.items()]
         )
+        logger.info("Completed saving trend analysis for all categories")
 
     async def start_crawling(self):
         """Main crawling process with periodic updates"""
+        logger.info("Starting crawling process")
         await self.authenticate()
 
         # Initial crawl
@@ -255,15 +329,20 @@ class BlueskyAdvancedCrawler:
         # Periodic crawling
         while True:
             try:
+                logger.info("Waiting for next crawl cycle")
                 await asyncio.sleep(5 * 60)  # 5-minute interval
                 await self.crawl_financial_content()
             except Exception as e:
-                print(f'Periodic crawl error: {e}')
+                logger.error(f'Periodic crawl error: {e}')
 
 
 async def main():
-    crawler = BlueskyAdvancedCrawler()
-    await crawler.start_crawling()
+    try:
+        logger.info("Starting Bluesky Advanced Crawler")
+        crawler = BlueskyAdvancedCrawler()
+        await crawler.start_crawling()
+    except Exception as e:
+        logger.critical(f"Critical error in main: {e}", exc_info=True)
 
 
 if __name__ == '__main__':
