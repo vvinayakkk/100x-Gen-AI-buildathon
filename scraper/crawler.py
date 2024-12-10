@@ -1,15 +1,15 @@
-import os
-import json
-import re
-import logging
-from typing import Dict, List, Any
 import asyncio
-import aiofiles
-import httpx
-from dotenv import load_dotenv
+import json
+import logging
+import os
+import re
+from typing import Dict, List, Any
+from datetime import datetime, timedelta, timezone
 
+import aiofiles
 # Using atproto for AT Protocol interactions
-from atproto import AsyncClient, models
+from atproto import AsyncClient
+from dotenv import load_dotenv
 
 
 # Configure logging
@@ -21,7 +21,7 @@ def setup_logging():
     # Configure logging to write to both console and file
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - [Line: %(lineno)d]',
         handlers=[
             logging.FileHandler(os.path.join(log_dir, 'bluesky_crawler.log')),
             logging.StreamHandler()
@@ -88,6 +88,8 @@ class BlueskyAdvancedCrawler:
         """Async method to search posts with error handling"""
         logger.info(f"Searching posts for term: {search_term}")
         try:
+            now = datetime.now(timezone.utc)
+            one_hour_ago = now - timedelta(hours=1)
             # Use app.bsky.feed.searchPosts method from atproto
             results = await self.client.app.bsky.feed.search_posts({"q": search_term, "limit": limit})
             logger.info(f"Found {len(results.posts)} posts for term: {search_term}")
@@ -99,13 +101,40 @@ class BlueskyAdvancedCrawler:
                     'likes': post.like_count,
                     'hashtags': self.extract_hashtags(post.record.text)
                 }
-                for post in results.posts
+                for post in results.posts if self.parse_created_at(post.record.created_at) > one_hour_ago
             ]
             logger.debug(f"Processed {len(processed_posts)} posts")
             return processed_posts
         except Exception as e:
             logger.error(f'Search error for {search_term}: {e}')
             return []
+
+    def parse_created_at(self,created_at):
+        """Attempt to parse the 'created_at' timestamp with various formats."""
+
+        if '.' in created_at:
+            date_part, time_part = created_at.split('.')
+            time_part = time_part.ljust(6, '0')
+            created_at = date_part
+
+        formats = [
+            '%Y-%m-%dT%H:%M:%S.%f%z',  # With fractional seconds and timezone
+            '%Y-%m-%dT%H:%M:%S%z',  # Without fractional seconds, with timezone
+            '%Y-%m-%dT%H:%M:%S.%fZ',  # With fractional seconds, Z timezone
+            '%Y-%m-%dT%H:%M:%SZ',  # Without fractional seconds, Z timezone
+            '%Y-%m-%dT%H:%M:%S.%f',
+            '%Y-%m-%dT%H:%M:%S'
+        ]
+        for fmt in formats:
+            try:
+                parsed_datetime = datetime.strptime(created_at, fmt)
+                if '%z' in fmt or 'Z' in created_at:
+                    return parsed_datetime.astimezone(timezone.utc)  # Convert to UTC timezone-aware
+                    # If the datetime is naive (no timezone), assume UTC
+                return parsed_datetime.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+        raise ValueError(f"Time data '{created_at}' does not match any known formats")
 
     async def crawl_financial_content(self):
         """Comprehensive financial content crawler with async operations"""
@@ -192,11 +221,16 @@ class BlueskyAdvancedCrawler:
 
         async def save_category(category, data):
             try:
-                async with aiofiles.open(self.categories[category], 'w') as f:
-                    await f.write(json.dumps(data, indent=2))
+                if isinstance(self.categories[category],dict):
+                    for item in self.categories[category]:
+                        async with aiofiles.open(item, 'w') as f:
+                            await f.write(json.dumps(data, indent=2))
+                else:
+                    async with aiofiles.open(self.categories[category], 'w') as f:
+                        await f.write(json.dumps(data, indent=2))
                 logger.info(f'Saved {len(data)} {category} posts')
             except Exception as e:
-                logger.error(f'Error saving {category} posts: {e}')
+                logger.error(f'Error saving {self.categories[category]} {category} posts: {e}',stack_info=True)
 
         # Use asyncio.gather for concurrent file writes
         await asyncio.gather(
@@ -298,6 +332,7 @@ class BlueskyAdvancedCrawler:
         await self.save_trend_analysis(trend_analysis)
         return trend_analysis
 
+
     async def save_trend_analysis(self, trend_data: Dict[str, Any]):
         """Save trend analysis results"""
         trend_store_path = os.path.join(os.path.dirname(self.categories['trends']['tech']), 'analysis')
@@ -330,7 +365,7 @@ class BlueskyAdvancedCrawler:
         while True:
             try:
                 logger.info("Waiting for next crawl cycle")
-                await asyncio.sleep(5 * 60)  # 5-minute interval
+                await asyncio.sleep(30 * 60)  # 5-minute interval
                 await self.crawl_financial_content()
             except Exception as e:
                 logger.error(f'Periodic crawl error: {e}')

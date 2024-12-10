@@ -559,7 +559,7 @@ async def run_workflow_periodically():
             logger.info("Workflow cycle completed. Waiting for next cycle...")
 
             # Wait for 10 minutes before next run
-            await asyncio.sleep(900)  # 600 seconds = 10 minutes
+            await asyncio.sleep(30 * 60)  # 600 seconds = 10 minutes
 
         except Exception as e:
             logger.error(f"Periodic workflow error: {e}")
