@@ -69,8 +69,8 @@ class BlueskyAdvancedCrawler:
         try:
             logger.info("Attempting to authenticate with Bluesky")
             await self.client.login(
-                os.getenv('BLUESKY_HANDLE'),
-                os.getenv('BLUESKY_PASSWORD')
+                os.getenv('BLUESKY_HANDLE_'),
+                os.getenv('BLUESKY_PASSWORD_')
             )
             logger.info('Authentication successful')
         except Exception as e:
