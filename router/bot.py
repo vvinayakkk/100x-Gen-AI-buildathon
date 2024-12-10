@@ -98,7 +98,7 @@ class BlueSkyBot:
                     }
             else:
                 if mention_post.embed:
-                    if root_post.embed.images:
+                    if mention_post.embed.images:
                         image_url = mention_post.embed.images[0]['thumb']
                         image_data = await self.process_and_upload_image(image_url)
                         data = {

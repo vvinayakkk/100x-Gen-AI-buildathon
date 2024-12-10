@@ -393,6 +393,10 @@ class IntentRouter:
             payload['tweet'] = data.get('originalTweet', '')
             payload['instructions'] = data.get('userCommand', '')
 
+        else:
+            payload['tweet'] = data.get('originalTweet', '')
+            payload['instructions'] = data.get('userCommand', '')
+
         try:
             if files:
                 # For multipart/form-data requests with files
