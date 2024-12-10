@@ -123,11 +123,7 @@ class TrendAnalyzer:
                     
                     Detailed Crypto Texts: {texts}
                     
-                    first generete the insights and then summarize them in a way that it is under 280 characters.
-                    
-                    """
-
-                    
+                    first generete the insights and then summarize them in a way that it is under 280 characters."""
                 ),
                 'tech': PromptTemplate(
                     input_variables=['texts'],
@@ -140,9 +136,7 @@ class TrendAnalyzer:
                     
                     Detailed Tech Texts: {texts}
                     
-                    first generete the insights and then summarize them in a way that it is under 280 characters.
-                    
-                    """
+                    first generete the insights and then summarize them in a way that it is under 280 characters."""
                 ),
                 'entertainment': PromptTemplate(
                     input_variables=['texts'],
@@ -160,14 +154,31 @@ class TrendAnalyzer:
             }
 
             # Select the appropriate prompt based on category
-            prompt = prompts.get(category, prompts['tech'])
+            # Modified to handle variations in input and provide a fallback
+            normalized_category = category.lower().strip()
+            
+            # Mapping to handle potential variations
+            category_map = {
+                'finance': 'financial',
+                'crypto': 'crypto',
+                'cryptocurrency': 'crypto',
+                'tech': 'tech',
+                'technology': 'tech',
+                'entertainment': 'entertainment',
+                'media': 'entertainment'
+            }
+            
+            # Get the standardized category or fallback to a default
+            standard_category = category_map.get(normalized_category, 'tech')
+            
+            # Select prompt, with tech as the ultimate fallback
+            prompt = prompts.get(standard_category, prompts['tech'])
 
             chain = LLMChain(llm=self.gemini_llm, prompt=prompt)
             result = chain.run(
                 texts='\n'.join(texts[:10]),
-                category=category
+                category=standard_category
             )
-            
             return str(result)
         except Exception as e:
             self.logger.error(f"AI insights generation error for {category}: {e}")
@@ -254,33 +265,26 @@ class BlueskyPoster:
             category = analysis_data['category']
             insights = str(analysis_data.get('ai_insights', ''))
             
-            # Robust sentiment handling
-            sentiments = analysis_data.get('sentiment_analysis', {})
-            top_sentiment = 'Recent trends'
-            
-            # Try multiple ways to extract a meaningful sentiment text
-            try:
-                # First, try the nested structure
-                if sentiments.get('top_positive'):
-                    top_sentiment = sentiments['top_positive'][0].get('text', top_sentiment)
-                
-                # If that fails, try a different approach
-                elif 'sentiment' in sentiments:
-                    top_sentiment = next(
-                        (item.get('text', top_sentiment) 
-                        for item in sentiments.get('sentiment', []) 
-                        if item.get('sentiment') == 'positive'),
-                        top_sentiment
-                    )
-            except Exception:
-                # If all else fails, use a generic trend text
-                pass
-            
-            # Safe hashtag handling
+            # Clean up hashtags
             top_hashtags = analysis_data.get('topHashtags', [])
-            # Convert hashtags to strings and ensure they start with #
-            safe_hashtags = [f'#{tag}' if not str(tag).startswith('#') else str(tag) 
-                            for tag in top_hashtags[:2]]
+            
+            # Ensure hashtags are clean strings
+            safe_hashtags = []
+            for tag in top_hashtags:
+                # If tag is a dictionary, extract the hashtag name
+                if isinstance(tag, dict):
+                    hashtag_name = tag.get('hashtag', '')
+                    # Only add if it's a non-empty string
+                    if hashtag_name:
+                        safe_hashtags.append(f'#{hashtag_name}')
+                # If tag is already a string, just ensure it starts with #
+                elif isinstance(tag, str):
+                    safe_hashtags.append(f'#{tag}' if not tag.startswith('#') else tag)
+            
+            # Limit to 2 hashtags
+            safe_hashtags = safe_hashtags[:2]
+            
+            # Fallback hashtags if no safe hashtags found
             default_hashtags = {
                 'financial': ['#Finance', '#Investment'],
                 'tech': ['#TechTrends', '#Innovation'],
@@ -288,48 +292,18 @@ class BlueskyPoster:
                 'entertainment': ['#EntertainmentNews', '#PopCulture']
             }
             
-            # Use default hashtags if no hashtags found
+            # Use safe hashtags or default hashtags
             hashtags = safe_hashtags if safe_hashtags else default_hashtags.get(category, ['#Trends'])
             hashtag_string = ' '.join(hashtags)
 
-            # More robust prompt creation
-            emoji_map = {
-                'financial': '📈',
-                'tech': '🚀',
-                'crypto': '₿',
-                'entertainment': '🎬'
-            }
-            emoji = emoji_map.get(category, '✨')
-
-            # More distinctive prompts for each category
+            # Rest of the method remains the same...
+            
+            # Robust prompt template
             prompts = {
-                'financial': f"""{emoji} Financial Pulse: {top_sentiment}
-    - Market insights
-    - Investment snapshot
-    {hashtag_string}
-
-    Crisp market update.""",
-                
-                'tech': f"""{emoji} Tech Frontier: {top_sentiment}
-    - Innovation highlights
-    - Tech trend snapshot
-    {hashtag_string}
-
-    Cutting-edge insights.""",
-                
-                'crypto': f"""{emoji} Crypto Momentum: {top_sentiment}
-    - Blockchain updates
-    - Crypto market pulse
-    {hashtag_string}
-
-    Quick crypto insights.""",
-                
-                'entertainment': f"""{emoji} Entertainment Buzz: {top_sentiment}
-    - Pop culture highlights
-    - Trending entertainment
-    {hashtag_string}
-
-    What's hot right now."""
+                'financial': f"📈 Financial Pulse: Market insights and investment snapshot. {hashtag_string}",
+                'tech': f"🚀 Tech Frontier: Innovation highlights and emerging trends. {hashtag_string}",
+                'crypto': f"₿ Crypto Momentum: Blockchain updates and market pulse. {hashtag_string}",
+                'entertainment': f"🎬 Entertainment Buzz: Pop culture and trending entertainment. {hashtag_string}"
             }
             
             # Fallback to a generic prompt if category not found
@@ -345,13 +319,12 @@ class BlueskyPoster:
     Additional Context: {insights}
 
     Guideline:
-    - keep it under 200 characters
+    - Keep it under 280 characters
     - Capture key insights
     - Use an engaging tone
-    - Fit within character limit
     - Maintain core message
-    - give the ai insights first and then summarize them in a way that it is under 200 characters.
-    - dont use bold or italic text in the post just normal text and emojies.
+    - Avoid complex dictionary or list representations
+    - Use emojis and plain text
     """
             )
             
@@ -364,14 +337,13 @@ class BlueskyPoster:
             # Ensure post is not empty and fits character limit
             formatted_post = self.format_post(str(post_text))
             
-            # Additional check to prevent empty posts
+            # Additional fallback for empty posts
             if not formatted_post or len(formatted_post) < 10:
-                # Fallback to a generic post if generation fails
                 fallback_posts = {
-                    'financial': f"📈 Market pulse: Navigating financial landscapes with smart insights! {hashtag_string}",
-                    'tech': f"🚀 Tech frontier: Innovations reshaping our digital world! {hashtag_string}",
-                    'crypto': f"₿ Crypto chronicles: Blockchain breaking barriers! {hashtag_string}",
-                    'entertainment': f"🎬 Entertainment spotlight: Where creativity meets excitement! {hashtag_string}"
+                    'financial': f"📈 Market pulse: Strategic insights for smart investors! {hashtag_string}",
+                    'tech': f"🚀 Tech world: Innovations shaping our digital future! {hashtag_string}",
+                    'crypto': f"₿ Crypto insights: Blockchain breaking new ground! {hashtag_string}",
+                    'entertainment': f"🎬 Entertainment spotlight: Creativity meets excitement! {hashtag_string}"
                 }
                 formatted_post = fallback_posts.get(category, fallback_posts['tech'])
             
