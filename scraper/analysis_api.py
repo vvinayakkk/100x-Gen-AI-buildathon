@@ -7,15 +7,14 @@ import traceback
 from datetime import datetime
 
 from atproto import Client, client_utils, models
-from atproto_client.models.app.bsky.feed.post import ReplyRef
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 from transformers import pipeline
-
-
+from dotenv import load_dotenv
+load_dotenv()
 class TrendAnalyzer:
     def __init__(self, logger=None):
         """
@@ -53,7 +52,7 @@ class TrendAnalyzer:
             # Gemini for advanced analysis
             self.gemini_llm = ChatGoogleGenerativeAI(
                 model="gemini-pro",
-                google_api_key="AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE"  # Replace with your API key
+                google_api_key=os.getenv('GEMINI_KEY')  # Replace with your API key
             )
         except Exception as e:
             self.logger.error(f"Model initialization failed: {e}")
@@ -107,9 +106,12 @@ class TrendAnalyzer:
                     4. Sector-specific insights
                     5. Short-term and long-term market outlook
                     
-                    first generate the insights and then summarize them in a way that it is under 280 characters.
-
-                    Detailed Financial Texts: {texts}"""
+                    Detailed Financial Texts: {texts}
+                    
+                    Analyze data (quantitative or qualitative) to identify patterns, trends, correlations, or themes. 
+                    Condense the insights into concise, actionable points or narratives, highlighting key takeaways for easy understanding and decision-making.
+                    Summarize in short
+                    """
                 ),
                 'crypto': PromptTemplate(
                     input_variables=['texts'],
@@ -122,7 +124,10 @@ class TrendAnalyzer:
                     
                     Detailed Crypto Texts: {texts}
                     
-                    first generate the insights and then summarize them in a way that it is under 280 characters."""
+                    Analyze data (quantitative or qualitative) to identify patterns, trends, correlations, or themes.
+                    Condense the insights into concise, actionable points or narratives, highlighting key takeaways for easy understanding and decision-making.
+                    Summarize in short
+                    """
                 ),
                 'tech': PromptTemplate(
                     input_variables=['texts'],
@@ -135,7 +140,10 @@ class TrendAnalyzer:
                     
                     Detailed Tech Texts: {texts}
                     
-                    first generete the insights and then summarize them in a way that it is under 280 characters."""
+                    Analyze data (quantitative or qualitative) to identify patterns, trends, correlations, or themes.
+                    Condense the insights into concise, actionable points or narratives, highlighting key takeaways for easy understanding and decision-making.
+                    Summarize in short
+                    """
                 ),
                 'entertainment': PromptTemplate(
                     input_variables=['texts'],
@@ -146,9 +154,12 @@ class TrendAnalyzer:
                     4. Potential industry shifts
                     5. Notable upcoming releases and developments
                     
-                    first generate the insights and then summarize them in a way that it is under 280 characters.
-
-                    Detailed Entertainment Texts: {texts}"""
+                    Detailed Entertainment Texts: {texts}
+                    
+                    Analyze data (quantitative or qualitative) to identify patterns, trends, correlations, or themes.
+                    Condense the insights into concise, actionable points or narratives, highlighting key takeaways for easy understanding and decision-making.
+                    Summarize in short
+                    """
                 )
             }
 
@@ -239,7 +250,7 @@ class BlueskyPoster:
         # Initialize Gemini for post generation
         self.gemini_llm = ChatGoogleGenerativeAI(
             model="gemini-pro",
-            google_api_key="AIzaSyDFCC3WxFXkar2cuZWBLNkFweuzIVB1hRE"  # Replace with your API key
+            google_api_key=os.getenv('GEMINI_KEY')  # Replace with your API key
         )
 
     def format_post(self, text, max_length=300):
@@ -323,29 +334,31 @@ class BlueskyPoster:
             prompts = {
                 'financial': f"📈 Financial Pulse: Market insights and investment snapshot. {hashtag_string}",
                 'tech': f"🚀 Tech Frontier: Innovation highlights and emerging trends. {hashtag_string}",
-                'crypto': f"₿ Crypto Momentum: Blockchain updates and market pulse. {hashtag_string}",
+                'crypto': f"🪙 Crypto Momentum: Blockchain updates and market pulse. {hashtag_string}",
                 'entertainment': f"🎬 Entertainment Buzz: Pop culture and trending entertainment. {hashtag_string}"
             }
 
             # Fallback to a generic prompt if category not found
-            prompt = prompts.get(category, prompts['tech'])
+            prompt = prompts.get(category, prompts['financial'])
 
             # Use Gemini to refine and format the post
             prompt_template = PromptTemplate(
                 input_variables=['insights', 'prompt'],
-                template="""Refine this post to be engaging, informative, and within 280 characters:
+                template="""Refine this post to be engaging, informative, and within 500 characters:
 
     Original Prompt: {prompt}
 
     Additional Context: {insights}
 
     Guideline:
-    - Keep it under 280 characters
-    - Capture key insights
-    - Use an engaging tone
-    - Maintain core message
-    - Avoid complex dictionary or list representations
-    - Use emojis and plain text
+    - Keep it under 500 characters.
+    - Capture key insights.
+    - Use an engaging tone.
+    - Maintain core message.
+    - Avoid complex dictionary or list representations.
+    - Use Hashtags aggressively within message for engaging with more audience.
+    - Use emojis aggressively for engaging with more audience.
+    - Do not use points.
     """
             )
 
@@ -382,11 +395,12 @@ class BlueskyPoster:
 
         try:
 
-            self.client.login('smartbot.bsky.social', 'abcd@123')
+            self.client.login(os.getenv('BLUESKY_HANDLE_'), os.getenv('BLUESKY_PASSWORD_'))
             previous_post_ref = None
             root_post = None
             parent_post = None
             for post_text in post:
+                post_text = post_text.replace("*", "")
                 if root_post is None:
                     root_post = models.create_strong_ref(self.client.send_post(
                         text=parse_text_to_facets(post_text),

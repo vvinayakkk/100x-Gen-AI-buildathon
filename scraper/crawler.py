@@ -84,12 +84,12 @@ class BlueskyAdvancedCrawler:
         logger.debug(f"Extracted {len(hashtags)} unique hashtags from text")
         return hashtags
 
-    async def search_posts(self, search_term: str, limit: int = 100) -> List[Dict[str, Any]]:
+    async def search_posts(self, search_term: str, limit: int = 100,top_n:int =50) -> List[Dict[str, Any]]:
         """Async method to search posts with error handling"""
         logger.info(f"Searching posts for term: {search_term}")
         try:
             now = datetime.now(timezone.utc)
-            one_hour_ago = now - timedelta(hours=1)
+            one_hour_ago = now - timedelta(hours=2)
             # Use app.bsky.feed.searchPosts method from atproto
             results = await self.client.app.bsky.feed.search_posts({"q": search_term, "limit": limit})
             logger.info(f"Found {len(results.posts)} posts for term: {search_term}")
@@ -103,8 +103,11 @@ class BlueskyAdvancedCrawler:
                 }
                 for post in results.posts if self.parse_created_at(post.record.created_at) > one_hour_ago
             ]
+
+            top_posts = sorted(processed_posts, key=lambda x: x['likes'], reverse=True)[:top_n]
+
             logger.debug(f"Processed {len(processed_posts)} posts")
-            return processed_posts
+            return top_posts
         except Exception as e:
             logger.error(f'Search error for {search_term}: {e}')
             return []
@@ -324,7 +327,7 @@ class BlueskyAdvancedCrawler:
                         post_metrics['top_posts'],
                         key=lambda x: x['likes'],
                         reverse=True
-                    )[:10]
+                    )[:50]
                 }
             }
 
