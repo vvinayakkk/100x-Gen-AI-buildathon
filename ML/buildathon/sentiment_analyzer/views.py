@@ -1,42 +1,28 @@
 from django.http import JsonResponse
-from .analyzer import UltraAdvancedTweetAnalyzer
 from django.views.decorators.csrf import csrf_exempt
-import gc
+from .lightweight_analyzer import TweetEmotionAnalyzer
 import json
 import logging
 
-# Setup logging for debugging
-logging.basicConfig(level=logging.DEBUG)
+# Setup logging
+logging.basicConfig(level=logging.INFO)
 
 @csrf_exempt
 def analyze_tweet(request):
     if request.method == "POST":
         try:
-            print("hi")
             # Parse incoming JSON data
             body = json.loads(request.body.decode('utf-8'))
             tweet_text = body.get("tweet_text")
-            print(tweet_text)
-            logging.debug(f"Received tweet text: {tweet_text}")
 
             if not tweet_text:
                 return JsonResponse({"error": "Tweet text is required"}, status=400)
 
-            # Perform analysis
-            logging.debug("Initializing analyzer...")
-            analyzer = UltraAdvancedTweetAnalyzer()
+            # Perform analysis with simple Gemini analyzer
+            analyzer = TweetEmotionAnalyzer()
+            analysis = analyzer.generate_tweet_response(tweet_text)
 
-            # Call the analysis method
-            logging.debug("Performing tweet analysis...")
-            analysis = analyzer.hyper_tweet_analysis(tweet_text)
-
-            logging.debug(f"Analysis result: {analysis}")
-
-            # Clean up to free memory
-            del analyzer
-            gc.collect()
-
-            # Send analysis back to frontend
+            # Send Gemini's direct response back
             return JsonResponse({"analysis": analysis}, status=200)
 
         except json.JSONDecodeError:
