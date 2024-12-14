@@ -83,22 +83,34 @@ class BlueSkyBot:
 
             logger.info(f"Processing user_request - {user_text}")
             if root_post and root_post.embed:
-                image_url = root_post.embed.images[0]['thumb']
-                image_data = await self.process_and_upload_image(image_url)
-                data = {
-                    'userCommand': user_text,
-                    'originalTweet': root_text if root_text != '' else user_text,
-                    'mediaData': str(base64.b64encode(image_data).decode('utf-8'))
-                }
-            else:
-                if mention_post.embed:
-                    image_url = mention_post.embed.images[0]['thumb']
+                if root_post.embed.images:
+                    image_url = root_post.embed.images[0]['thumb']
                     image_data = await self.process_and_upload_image(image_url)
                     data = {
                         'userCommand': user_text,
                         'originalTweet': root_text if root_text != '' else user_text,
                         'mediaData': str(base64.b64encode(image_data).decode('utf-8'))
                     }
+                else:
+                    data = {
+                        'userCommand': user_text,
+                        'originalTweet': root_text if root_text != '' else user_text
+                    }
+            else:
+                if mention_post.embed:
+                    if mention_post.embed.images:
+                        image_url = mention_post.embed.images[0]['thumb']
+                        image_data = await self.process_and_upload_image(image_url)
+                        data = {
+                            'userCommand': user_text,
+                            'originalTweet': root_text if root_text != '' else user_text,
+                            'mediaData': str(base64.b64encode(image_data).decode('utf-8'))
+                        }
+                    else:
+                        data = {
+                            'userCommand': user_text,
+                            'originalTweet': root_text if root_text != '' else user_text
+                        }
                 else:
                     data = {
                         'userCommand': user_text,
@@ -212,11 +224,11 @@ class BlueSkyBot:
             reply_to_parent = models.create_strong_ref(mention)
 
             if image_embed:
-                await self.client.send_image(image_alt=reply_text, image=image_embed, text=reply_text,
+                await self.client.send_image(image_alt=reply_text, image=image_embed, text=self.parse_text_to_facets(reply_text),
                                              reply_to=models.AppBskyFeedPost.ReplyRef(parent=reply_to_parent,
                                                                                       root=reply_to_root))
             else:
-                await self.client.send_post(text=client_utils.TextBuilder().text(reply_text),
+                await self.client.send_post(text=self.parse_text_to_facets(reply_text),
                                             reply_to=models.AppBskyFeedPost.ReplyRef(parent=reply_to_parent,
                                                                                      root=reply_to_root))
             logger.info('Successfully replied to mention')
@@ -244,7 +256,7 @@ class BlueSkyBot:
             # Filter unread mentions
             mentions = [
                 notif for notif in notifications.notifications
-                if notif.reason == 'mention' and not notif.is_read
+                if (notif.reason == 'mention' or notif.reason == 'reply') and not notif.is_read
             ]
 
             if not mentions:
@@ -284,7 +296,7 @@ class BlueSkyBot:
             await self.check_mentions()
             await asyncio.sleep(30)
 
-    def parse_text_to_facets(text: str) -> client_utils.TextBuilder:
+    def parse_text_to_facets(self,text) :
         """
         Parse a string and automatically create appropriate facets for mentions, links, and tags.
 

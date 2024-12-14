@@ -101,7 +101,7 @@ class FlexibleTweetProcessor:
             
             # If the request is generic, add a "savage" comment
             if any(keyword in instructions.lower() for keyword in ['what', 'how', 'why', 'define']):
-                result.content += "\n\nP.S. I'm answering this for you, but just so you know, I'm built for more advanced features than answering simple questions. 😏 Don't ask me silly stuff like that again! JK, just kidding—I'm always here for you. 😉"
+                result.content += "\n\nP.S. I'm answering this for you, but just so you know, I'm built for more advanced features than answering simple questions. 😏 You can ask me anything, even the quirky stuff! Just kidding—I’m always here for you. 😉"
 
             return result.content if result.content else "Processing failed. Please try again."
         
