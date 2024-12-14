@@ -68,41 +68,76 @@ class TweetEmotionAnalyzer:
             }
 
         try:
-            # Prompt for generating a detailed sentiment analysis and multiple suggestions
             response_prompt = f"""Analyze the sentiment of this tweet: "{tweet_text}". 
-            Provide:
-            1. Emotion percentages (Top 5)
-            2. A concise sentiment description
-            3. Three distinct, supportive tweet-style suggestions to help the person
-            
-            Each suggestion should be unique, actionable, and encouraging. 
-            Ensure they are different approaches to coping or finding support."""
+            Provide the response in the following JSON format:
+            {{
+                "emotions": {{
+                    "emotion1": percentage1,
+                    "emotion2": percentage2,
+                    ...
+                }},
+                "sentiment_description": "A concise description of the sentiment",
+                "tweet_suggestions": [
+                    "Suggestion 1",
+                    "Suggestion 2",
+                    "Suggestion 3"
+                ]
+            }}"""
 
             # Invoke Gemini to generate response
             full_analysis = self.llm.invoke(response_prompt)
-            print("full analysis:",full_analysis)
-            # Default fallback values
-            emotions = {
-                "Sadness": 60.0,
-                "Loneliness": 20.0,
-                "Frustration": 15.0,
-                "Anger": 5.0
-            }
             
-            description = "A moment of emotional vulnerability, seeking support and understanding from the community."
-            
-            # Default suggestions if LLM fails
-            tweet_suggestions = [
-                "Practice self-care: Take a warm bath, read a book, or do something that brings you joy. Small steps can make a big difference. 💖 #SelfLove",
-                "Reach out to a friend or family member. Sometimes talking helps. Remember, you're not alone in this journey. 🤗 #Support",
-                "Try a mindfulness exercise: Deep breathing, meditation, or a short walk can help clear your mind and lift your spirits. 🧘‍♀️ #MentalHealth"
-            ]
+            # Improved JSON parsing with more robust error handling
+            try:
+                # Remove code block markers if present (case-insensitive)
+                full_analysis = full_analysis.strip()
+                if full_analysis.lower().startswith('```json') and full_analysis.lower().endswith('```'):
+                    full_analysis = full_analysis[7:-3].strip()
+                
+                # Parse JSON
+                parsed_analysis = json.loads(full_analysis)
+                
+                # Extract components from parsed JSON with default fallback
+                emotions = parsed_analysis.get('emotions', {
+                    "Sadness": 60.0,
+                    "Loneliness": 20.0,
+                    "Frustration": 15.0,
+                    "Anger": 5.0
+                })
+                
+                description = parsed_analysis.get('sentiment_description', 
+                    "A moment of emotional vulnerability, seeking support and understanding from the community.")
+                
+                tweet_suggestions = parsed_analysis.get('tweet_suggestions', [
+                    "Practice self-care: Take a warm bath, read a book, or do something that brings you joy. Small steps can make a big difference. 💖 #SelfLove",
+                    "Reach out to a friend or family member. Sometimes talking helps. Remember, you're not alone in this journey. 🤗 #Support",
+                    "Try a mindfulness exercise: Deep breathing, meditation, or a short walk can help clear your mind and lift your spirits. 🧘‍♀️ #MentalHealth"
+                ])
+                
+                # Truncate suggestions to fit Twitter character limit
+                tweet_suggestions = [
+                    (suggestion[:280] + "...") if len(suggestion) > 280 else suggestion 
+                    for suggestion in tweet_suggestions
+                ]
 
-            # Truncate suggestions to fit Twitter character limit
-            tweet_suggestions = [
-                (suggestion[:300] + "...") if len(suggestion) > 300 else suggestion 
-                for suggestion in tweet_suggestions
-            ]
+            except json.JSONDecodeError as json_err:
+                # Log the specific JSON decoding error with full details
+                self.logger.warning(f"JSON Decode Error: {json_err}")
+                self.logger.warning(f"Problematic JSON content (length: {len(full_analysis)}): {full_analysis}")
+                
+                # Fallback to default values
+                emotions = {
+                    "Sadness": 60.0,
+                    "Loneliness": 20.0,
+                    "Frustration": 15.0,
+                    "Anger": 5.0
+                }
+                description = "A moment of emotional vulnerability, seeking support and understanding from the community."
+                tweet_suggestions = [
+                    "Practice self-care: Take a warm bath, read a book, or do something that brings you joy. Small steps can make a big difference. 💖 #SelfLove",
+                    "Reach out to a friend or family member. Sometimes talking helps. Remember, you're not alone in this journey. 🤗 #Support",
+                    "Try a mindfulness exercise: Deep breathing, meditation, or a short walk can help clear your mind and lift your spirits. 🧘‍♀️ #MentalHealth"
+                ]
 
             # Log successful response generation
             self.logger.info(f"Generated tweet response for: {tweet_text[:50]}...")
@@ -125,7 +160,6 @@ class TweetEmotionAnalyzer:
                     'original_tweet': tweet_text
                 }
             }
-
     def validate_response(self, response: Dict[str, Any]) -> bool:
         """
         Validate the structure of the generated tweet response.
