@@ -2,6 +2,8 @@
 
 An intelligent bot for Bluesky that processes mentions and provides AI-powered responses through various specialized agents. The project combines a Node.js server for Bluesky interaction and a Django-based ML API for intelligence features.
 
+<img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/02e4fac4-18d5-4ec2-9792-9c40cc65976f" />
+
 ---
 
 # How to use
